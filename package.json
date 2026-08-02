@@ -1,0 +1,13 @@
+{
+  "name": "error-9-to-5",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A Flash data-science rescue platformer running in Ruffle",
+  "scripts": {
+    "prepare-site": "node scripts/prepare-site.mjs",
+    "serve": "npx --yes serve public"
+  },
+  "dependencies": {
+    "@ruffle-rs/ruffle": "0.4.1"
+  }
+}

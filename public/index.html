@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#080b14">
+  <title>Error 9 to 5</title>
+  <style>
+    *{box-sizing:border-box}html,body{min-height:100%;margin:0}body{display:grid;place-items:center;padding:20px;background:#080b14;color:#dbe8ff;font-family:Consolas,"Cascadia Mono",monospace}main{width:min(1180px,100%)}header{text-align:center;margin-bottom:14px}h1{margin:0;color:#72f1b8;letter-spacing:.18em;font-size:clamp(1.35rem,4vw,2.4rem)}p{margin:.4rem 0;color:#8392b7}.cabinet{padding:12px;border:1px solid #283453;border-radius:12px;background:#10172a;box-shadow:0 22px 80px #000b,0 0 55px #39d6a10c}#player{width:100%;aspect-ratio:16/9;background:#0b1020}ruffle-player{width:100%;height:100%}footer{text-align:center;font-size:.78rem;margin-top:10px;color:#526180}
+  </style>
+  <script src="./ruffle/ruffle.js"></script>
+</head>
+<body><main><header><h1>ERROR 9 TO 5</h1><p>A data-science rescue mission</p></header><div class="cabinet"><div id="player"></div></div><footer>Real SWF · Haxe · Ruffle · Use WASD/Arrows, Space, E, and 1–3</footer></main>
+<script>addEventListener("DOMContentLoaded",()=>{const r=RufflePlayer.newest(),p=r.createPlayer();document.querySelector("#player").appendChild(p);p.ruffle().load({url:"./game.swf",autoplay:"on",unmuteOverlay:"hidden"})})</script></body></html>
+

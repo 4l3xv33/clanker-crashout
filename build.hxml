@@ -1,0 +1,6 @@
+-cp src
+-main Main
+-swf public/game.swf
+-swf-version 11.8
+-D swf-header=960:540:60:0b1020
+-D analyzer-optimize
