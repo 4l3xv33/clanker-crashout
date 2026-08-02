@@ -1,0 +1,7 @@
+-cp src
+-main Main
+-D qa
+-swf tmp/game-qa.swf
+-swf-version 11.8
+-D swf-header=960:540:60:0b1020
+-D analyzer-optimize

@@ -4,7 +4,9 @@
   "private": true,
   "description": "A Flash data-science rescue platformer running in Ruffle",
   "scripts": {
+    "build:swf": "node scripts/build-swf.mjs",
     "prepare-site": "node scripts/prepare-site.mjs",
+    "validate": "node scripts/validate-content.mjs",
     "serve": "npx --yes serve public"
   },
   "dependencies": {

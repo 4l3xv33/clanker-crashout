@@ -1,21 +1,81 @@
-# Error 9 to 5
+# ERROR 9 TO 5
 
-A five-floor Flash platformer about diagnosing broken workplace AI systems. Explore each department, inspect three evidence terminals, answer a three-part incident case, free a coworker, and climb to the next floor.
+An original five-floor educational platformer about diagnosing broken workplace AI systems. The game is written in Haxe, compiled to a real SWF, and played in current browsers through a pinned Ruffle runtime.
 
-## Controls
+## Player controls
 
-- **WASD / Arrow keys:** Move and jump
-- **E:** Inspect evidence, confront a robot, or use the stairs
-- **1–3:** Choose an incident-response answer
-- **Space:** Start or continue after feedback
+| Input | Action |
+| --- | --- |
+| WASD / Arrow keys | Move and jump |
+| Space | Jump, start, or continue |
+| E | Inspect evidence, confront a robot, use stairs |
+| G | Open field notes |
+| 1–3 or mouse | Choose an incident response |
+| Esc | Pause and settings |
+| F | Fullscreen |
 
-## Build and run
+Settings include sound, reduced motion, high contrast, and larger text preferences. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
+
+## Game structure
+
+Each floor follows the same learning loop:
+
+1. Observe three contextual evidence records.
+2. Diagnose the failure.
+3. Choose an immediate response.
+4. Install a preventive control.
+5. Restore the robot and release the coworker.
+
+The five departments cover hallucination and grounding, historical bias and contestability, consent and deceptive marketing, provenance and impersonation, and system-level objectives and least privilege.
+
+## Build locally
+
+Install [Haxe 4.3.7](https://haxe.org/download/) and Node.js, then run:
 
 ```powershell
-haxe build.hxml
 npm.cmd install
+npm.cmd run build:swf
 npm.cmd run prepare-site
+npm.cmd run validate
 npm.cmd run serve
 ```
 
-The deployable static site is `public/`.
+Open the local URL printed by `serve`. Do not test by double-clicking `index.html`; browsers restrict WebAssembly and asset loading under `file://`.
+
+## Architecture
+
+```text
+src/
+├── Main.hx                 Game state and orchestration
+├── data/                   Reviewable floor and incident content
+├── entities/               Animated player, robots, coworkers, hazards
+├── systems/                Save data, settings, procedural audio
+├── ui/                     HUD, prompts, incident and pause interfaces
+└── world/                  Department layouts and environmental rendering
+```
+
+Editable visual references live in `assets/concept`. Optimized website artwork lives in `public/assets`. Runtime characters and environments use code-native vector drawing for crisp, lightweight SWF animation.
+
+## Editing educational content
+
+Floor briefings, evidence, questions, answers, consequences, and principles are isolated in `src/data/GameContent.hx`. Every incident question contains:
+
+- Three choices
+- One correct choice index
+- A direct explanation
+- A concrete consequence
+- A reusable governing principle
+
+Run `npm.cmd run validate` after content edits. Professional legal, HR, privacy, copyright, responsible-AI, accessibility, and representative-player review remain external release inputs; see `docs/review-checklists.md`.
+
+## Production safeguards
+
+- The production build contains no QA keyboard shortcuts.
+- Relative URLs support GitHub project Pages under `/error-9-to-5/`.
+- Ruffle is pinned through `package-lock.json` and copied during deployment.
+- GitHub Actions deploys only from `main`.
+- Development work should remain on a branch until browser QA passes.
+
+## Deployment
+
+The workflow in `.github/workflows/pages.yml` installs the pinned Ruffle package, validates the build, and deploys `public/` to GitHub Pages. The compiled SWF is committed intentionally; CI does not need Haxe to publish a reviewed release artifact.

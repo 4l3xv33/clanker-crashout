@@ -1,229 +1,193 @@
 package;
 
+import data.FloorData;
+import data.GameContent;
+import entities.Coworker;
+import entities.Hazard;
+import entities.Player;
+import entities.Robot;
 import flash.Lib;
 import flash.display.Sprite;
+import flash.display.StageDisplayState;
 import flash.events.Event;
 import flash.events.KeyboardEvent;
+import flash.events.MouseEvent;
 import flash.geom.Rectangle;
-import flash.text.TextField;
-import flash.text.TextFormat;
+import flash.geom.ColorTransform;
 import flash.ui.Keyboard;
+import systems.SaveManager;
+import systems.SoundManager;
+import ui.Hud;
+import ui.IncidentPanel;
+import ui.PausePanel;
+import ui.PromptBar;
+import ui.Theme;
+import world.LevelView;
 
 class Main extends Sprite {
-    static inline var W = 960;
-    static inline var H = 540;
-    static inline var GROUND = 450.0;
-    static inline var LEVEL_W = 2200.0;
+    static inline var W=960;
+    static inline var H=540;
 
-    var cases:Array<FloorCase>;
-    var floorIndex = 0;
+    var floors:Array<FloorData>;
+    var floorIndex=0;
+    var save:SaveManager;
+    var audio:SoundManager;
+    var keys:Map<Int,Bool>=new Map();
+
     var world:Sprite;
-    var scenery:Sprite;
+    var level:LevelView;
     var actors:Sprite;
-    var player:Sprite;
-    var robot:Sprite;
-    var coworker:Sprite;
+    var player:Player;
+    var robot:Robot;
+    var coworker:Coworker;
     var stairs:Sprite;
-    var evidenceSprites:Array<Sprite> = [];
-    var hazards:Array<Hazard> = [];
-    var platforms:Array<Rectangle> = [];
-    var keys:Map<Int,Bool> = new Map();
-    var hud:TextField;
-    var prompt:TextField;
-    var overlay:Sprite;
-    var overlayText:TextField;
-    var px = 80.0; var py = GROUND - 38; var vx = 0.0; var vy = 0.0;
-    var grounded = false; var cameraX = 0.0; var integrity = 3;
-    var evidence:Array<Bool> = [false,false,false];
-    var quizIndex = 0; var lastCorrect = false; var resolved = false;
-    var state = "TITLE"; var lastTime = 0; var invincible = 0.0; var toastTime = 0.0;
+    var terminals:Array<Sprite>=[];
+    var hazards:Array<Hazard>=[];
+
+    var hud:Hud;
+    var prompt:PromptBar;
+    var incident:IncidentPanel;
+    var pausePanel:PausePanel;
+    var screen:Sprite;
+    var screenText:flash.text.TextField;
+
+    var state="TITLE";
+    var previousState="PLAY";
+    var evidence:Array<Bool>=[false,false,false];
+    var integrity=3;
+    var questionIndex=0;
+    var lastCorrect=false;
+    var resolved=false;
+    var cameraX=0.0;
+    var checkpointX=70.0;
+    var invincible=0.0;
+    var lastTime=0;
+    var levelTime=0.0;
 
     public static function main():Void Lib.current.addChild(new Main());
-    public function new() { super(); addEventListener(Event.ADDED_TO_STAGE, init); }
+    public function new(){super();addEventListener(Event.ADDED_TO_STAGE,init);}
 
     function init(_:Event):Void {
-        stage.scaleMode = flash.display.StageScaleMode.SHOW_ALL; stage.align = flash.display.StageAlign.TOP_LEFT; stage.color = 0x080B14;
-        cases = buildCases(); world = new Sprite(); scenery = new Sprite(); actors = new Sprite(); world.addChild(scenery); world.addChild(actors); addChild(world);
-        player = new Sprite(); actors.addChild(player); drawPlayer();
-        hud = text(17,0xDCE8FF,true); hud.x=18; hud.y=13; hud.width=924; hud.height=30; addChild(hud);
-        prompt = text(16,0xFFFFFF,true); prompt.x=110; prompt.y=475; prompt.width=740; prompt.height=52; prompt.multiline=true; prompt.wordWrap=true; prompt.background=true; prompt.backgroundColor=0x111A2E; prompt.visible=false; addChild(prompt);
-        makeOverlay(); stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown); stage.addEventListener(KeyboardEvent.KEY_UP,keyUp); addEventListener(Event.ENTER_FRAME,update); showTitle();
+        stage.scaleMode=flash.display.StageScaleMode.SHOW_ALL;stage.align=flash.display.StageAlign.TOP_LEFT;stage.color=Theme.BG;
+        floors=GameContent.floors();save=new SaveManager();audio=new SoundManager();audio.enabled=save.settings.sound;
+        world=new Sprite();actors=new Sprite();addChild(world);
+        player=new Player();
+        hud=new Hud();addChild(hud);prompt=new PromptBar();addChild(prompt);incident=new IncidentPanel();addChild(incident);pausePanel=new PausePanel();addChild(pausePanel);makeScreen();
+        stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown);stage.addEventListener(KeyboardEvent.KEY_UP,keyUp);stage.addEventListener(MouseEvent.CLICK,onClick);addEventListener(Event.ENTER_FRAME,update);
+        applyAccessibility();showTitle();
     }
+
+    function makeScreen():Void {screen=new Sprite();screen.graphics.beginFill(Theme.BG,.98);screen.graphics.drawRect(0,0,W,H);screen.graphics.endFill();addChild(screen);screenText=Theme.field(20,Theme.TEXT,false);screenText.x=105;screenText.y=60;screenText.width=750;screenText.height=420;screen.addChild(screenText);}
 
     function showTitle():Void {
-        state="TITLE"; overlay.visible=true;
-        overlayText.htmlText='<p align="center"><font size="42" color="#72F1B8">ERROR 9 TO 5</font>\n<font size="18" color="#91A4CE">A DATA-SCIENCE RESCUE MISSION</font>\n\n<font size="20">The office automation network received one bad instruction:\n<font color="#FFCB6B">MAXIMIZE OUTPUT. NEVER HESITATE.</font>\n\nFive departments are trapped inside its idea of productivity.\nFind the evidence. Diagnose the failure. Restore the humans.\n\n<font color="#72F1B8">PRESS SPACE TO CLOCK IN</font></font></p>';
-        hud.text=""; prompt.visible=false;
+        state="TITLE";screen.visible=true;hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
+        screenText.htmlText='<p align="center"><font size="43" color="#72F1B8">ERROR 9 TO 5</font>\n<font size="17" color="#8FA1C6">A DATA-SCIENCE RESCUE MISSION</font>\n\n<font size="21">The automation network received one bad instruction:</font>\n<font size="25" color="#FFCB6B">MAXIMIZE OUTPUT. NEVER HESITATE.</font>\n\n<font size="18">Investigate five departments. Repair the decisions. Restore the humans.</font>\n\n<font color="#72F1B8">SPACE  CLOCK IN</font>    <font color="#FFCB6B">L  FLOOR SELECT</font>\n\n<font size="14" color="#8FA1C6">WASD / Arrows · Space jump · E inspect · G field notes · Esc settings</font></p>';
     }
 
-    function loadFloor(index:Int):Void {
-        floorIndex=index; state="PLAY"; overlay.visible=false; prompt.visible=false; integrity=3; evidence=[false,false,false]; quizIndex=0; resolved=false; px=80; py=GROUND-38; vx=0; vy=0; cameraX=0;
-        #if debug_qa
-        evidence=[true,true,true]; px=1600; py=GROUND-38;
+    function showFloorSelect():Void {
+        state="SELECT";screen.visible=true;var list="";for(i in 0...floors.length){var unlocked=i<=save.highestFloor;list+='<font color="'+(unlocked?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+floors[i].department+(unlocked?'':'  [LOCKED]')+'</font>\n\n';}
+        screenText.htmlText='<font size="31" color="#FFFFFF">SELECT A FLOOR</font>\n<font size="15" color="#8FA1C6">Completed departments remain available for review.</font>\n\n<font size="20">'+list+'</font><font size="14" color="#8FA1C6">Press 1–5 · Esc returns to title</font>';
+    }
+
+    function beginFloor(index:Int):Void {
+        floorIndex=index;state="BRIEFING";screen.visible=false;hud.visible=true;pausePanel.hide();incident.briefing(floors[index]);
+        buildFloor();
+    }
+
+    function buildFloor():Void {
+        while(world.numChildren>0)world.removeChildAt(0);level=new LevelView(floors[floorIndex],floorIndex);world.addChild(level);actors=new Sprite();world.addChild(actors);
+        evidence=[false,false,false];integrity=3;questionIndex=0;resolved=false;cameraX=0;checkpointX=70;levelTime=0;terminals=[];hazards=[];
+        player.x=70;player.y=LevelView.GROUND-40;player.vx=0;player.vy=0;actors.addChild(player);
+        for(i in 0...3){var terminal=makeTerminal(i,floors[floorIndex].accent);var p=level.evidencePositions[i];terminal.x=p.x;terminal.y=p.y;actors.addChild(terminal);terminals.push(terminal);}
+        robot=new Robot(floors[floorIndex].accent,floors[floorIndex].robot);robot.x=level.robotX;robot.y=LevelView.GROUND-44;actors.addChild(robot);
+        coworker=new Coworker(floors[floorIndex].accent,floors[floorIndex].coworker,floors[floorIndex].role,floorIndex);coworker.x=level.robotX+112;coworker.y=LevelView.GROUND-29;actors.addChild(coworker);
+        stairs=makeStairs(floors[floorIndex].accent);stairs.x=level.stairsX;stairs.y=LevelView.GROUND;actors.addChild(stairs);
+        var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var hazard=new Hazard(floors[floorIndex].accent,xs[i],xs[i]-75,xs[i]+75,i+floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
+        #if qa
+        evidence=[true,true,true];for(terminal in terminals)terminal.alpha=.28;player.x=level.robotX-105;checkpointX=player.x;
         #end
-        while(scenery.numChildren>0) scenery.removeChildAt(0); while(actors.numChildren>0) actors.removeChildAt(0);
-        evidenceSprites=[]; hazards=[]; platforms=[]; drawFloor(); drawActors(); updateHud();
-        #if debug_qa
-        for(s in evidenceSprites) s.alpha=.25;
-        #end
+        updateHud();
     }
 
-    function drawFloor():Void {
-        var c=cases[floorIndex], g=scenery.graphics; g.clear();
-        g.beginFill(c.dark); g.drawRect(0,0,LEVEL_W,H); g.endFill();
-        for(i in 0...55){g.beginFill(c.accent,.08+Math.random()*.13);g.drawRect(Math.random()*LEVEL_W,55+Math.random()*330,2+Math.random()*3,2+Math.random()*3);g.endFill();}
-        g.beginFill(c.wall); g.drawRect(0,80,LEVEL_W,370); g.endFill();
-        g.lineStyle(2,c.accent,.2); for(x in 0...22){g.moveTo(x*100,80);g.lineTo(x*100,450);}
-        g.beginFill(0x182038); g.drawRect(0,450,LEVEL_W,90); g.endFill(); g.beginFill(c.accent,.55); g.drawRect(0,450,LEVEL_W,4); g.endFill();
-        platforms=[new Rectangle(0,450,LEVEL_W,90),new Rectangle(330,382,190,18),new Rectangle(650,330,190,18),new Rectangle(960,385,210,18),new Rectangle(1240,318,180,18)];
-        for(p in platforms){if(p.y<450){g.beginFill(0x273351);g.drawRect(p.x,p.y,p.width,p.height);g.endFill();g.beginFill(c.accent,.7);g.drawRect(p.x,p.y,p.width,3);g.endFill();}}
-        for(i in 0...7){var ox=170+i*285;g.beginFill(0x11182B);g.drawRect(ox,120,120,82);g.endFill();g.lineStyle(2,c.accent,.25);g.drawRect(ox,120,120,82);g.moveTo(ox+18,153);g.lineTo(ox+102,153);}
-        var title=text(23,c.accent,true);title.text="FLOOR "+(floorIndex+1)+"  //  "+c.department.toUpperCase();title.x=36;title.y=92;title.width=600;scenery.addChild(title);
-    }
-
-    function drawActors():Void {
-        var c=cases[floorIndex];
-        var positions=[new PointData(420,350),new PointData(720,298),new PointData(1310,286)];
-        for(i in 0...3){var s=makeEvidence(i,c.accent);s.x=positions[i].x;s.y=positions[i].y;actors.addChild(s);evidenceSprites.push(s);}
-        robot=makeRobot(c.accent);robot.x=1650;robot.y=GROUND-44;actors.addChild(robot);
-        coworker=makeCoworker(c.accent);coworker.x=1745;coworker.y=GROUND-48;actors.addChild(coworker);
-        stairs=makeStairs(c.accent);stairs.x=2010;stairs.y=GROUND;actors.addChild(stairs);
-        for(i in 0...3){var h=makeHazard(c.accent);h.sprite.x=560+i*420;h.sprite.y=GROUND-22;h.minX=h.sprite.x-90;h.maxX=h.sprite.x+90;actors.addChild(h.sprite);hazards.push(h);}
-        actors.addChild(player);player.x=px;player.y=py;
-    }
+    function startPlay():Void {state="PLAY";incident.hide();prompt.toast("Find the evidence. Press E near highlighted objects to inspect them.",3.5);}
 
     function update(_:Event):Void {
         var now=Lib.getTimer();if(lastTime==0)lastTime=now;var dt=Math.min((now-lastTime)/1000,.04);lastTime=now;
-        if(state!="PLAY") return;
-        invincible-=dt;toastTime-=dt;if(toastTime<=0)prompt.visible=false;
-        var move=0.0;if(down(Keyboard.LEFT)||down(65))move-=1;if(down(Keyboard.RIGHT)||down(68))move+=1;
-        vx=(vx+move*900*dt)*Math.pow(.025,dt);if(vx>260)vx=260;if(vx< -260)vx=-260;
-        var oldY=py;vy+=1050*dt;px+=vx*dt;py+=vy*dt;if(px<20){px=20;vx=0;}if(px>LEVEL_W-20){px=LEVEL_W-20;vx=0;}
-        grounded=false;var feet=py+38;var oldFeet=oldY+38;
-        for(p in platforms)if(vy>=0&&px+13>p.x&&px-13<p.x+p.width&&oldFeet<=p.y+5&&feet>=p.y){py=p.y-38;vy=0;grounded=true;break;}
-        if(py>H+80){px=Math.max(50,px-180);py=200;vy=0;damage("You fell into a broken workflow.");}
-        updateHazards(dt);player.x=px;player.y=py;player.alpha=(invincible>0&&Std.int(invincible*12)%2==0) ? .25 : 1;player.scaleX=move<0 ? -1 : (move>0 ? 1 : player.scaleX);
-        cameraX=Math.max(0,Math.min(LEVEL_W-W,px-W*.42));world.x=-cameraX;updateContext();
+        prompt.update(dt);if(state!="PLAY")return;levelTime+=dt;invincible-=dt;
+        var input=0.0;if(down(Keyboard.LEFT)||down(65))input-=1;if(down(Keyboard.RIGHT)||down(68))input+=1;
+        if(player.grounded)player.coyote=.1;else player.coyote-=dt;player.jumpBuffer-=dt;
+        var acceleration=player.grounded ? 1250 : 760;player.vx+=input*acceleration*dt;var drag=player.grounded ? .035 : .32;player.vx*=Math.pow(drag,dt);if(player.vx>285)player.vx=285;if(player.vx< -285)player.vx=-285;
+        if(input!=0)player.facing=input<0?-1:1;
+        if(player.jumpBuffer>0&&player.coyote>0){player.vy=-470;player.jumpBuffer=0;player.coyote=0;player.grounded=false;audio.play("jump");}
+        var oldY=player.y;player.vy+=1120*dt;player.x+=player.vx*dt;player.y+=player.vy*dt;if(player.x<18){player.x=18;player.vx=0;}if(player.x>LevelView.WIDTH-18){player.x=LevelView.WIDTH-18;player.vx=0;}
+        collide(oldY);if(player.y>H+100)respawn("A broken workflow dropped you from the process.");
+        for(h in hazards){h.update(dt,LevelView.GROUND,save.settings.reducedMotion);if(invincible<=0&&distance(player.x,player.y,h.sprite.x,h.sprite.y)<31)damage("A corrupted automation process interrupted you.");}
+        player.animate(dt,Math.abs(player.vx)>20,false,save.settings.reducedMotion);player.alpha=(invincible>0&&Std.int(invincible*12)%2==0) ? .3 : 1;robot.update(dt,save.settings.reducedMotion);
+        var target=Math.max(0,Math.min(LevelView.WIDTH-W,player.x-W*.42));cameraX+=save.settings.reducedMotion?(target-cameraX):(target-cameraX)*Math.min(1,dt*6);world.x=-cameraX;context();
     }
 
-    function updateHazards(dt:Float):Void for(h in hazards){h.phase+=dt;h.sprite.x+=h.dir*70*dt;if(h.sprite.x<h.minX||h.sprite.x>h.maxX)h.dir*=-1;h.sprite.y=GROUND-22+Math.sin(h.phase*3)*8;if(invincible<=0&&dist(px,py,h.sprite.x,h.sprite.y)<31)damage("A corrupted process knocked your system offline.");}
-    function damage(msg:String):Void {integrity--;invincible=1.4;vx=-180;vy=-280;showToast(msg+"  Integrity -1");if(integrity<=0){integrity=3;px=Math.max(60,px-260);showToast("Coaching protocol restored your integrity. Review, then continue.");}updateHud();}
-
-    function updateContext():Void {
-        var near=-1;for(i in 0...3)if(!evidence[i]&&dist(px,py,evidenceSprites[i].x,evidenceSprites[i].y)<80)near=i;
-        if(near>=0){showHint("[E] Inspect evidence terminal "+(near+1));return;}
-        if(dist(px,py,robot.x,robot.y)<110){showHint(allEvidence()?"[E] Begin incident review":"The robot rejects guesses. Find all three evidence logs.");return;}
-        if(dist(px,py,stairs.x,GROUND-30)<110){showHint(resolved?"[E] Take the stairs":"ACCESS DENIED — restore this floor first");return;}
-        if(toastTime<=0)prompt.visible=false;
+    function collide(oldY:Float):Void {
+        player.grounded=false;var oldFeet=oldY+40;var feet=player.y+40;
+        for(p in level.platforms)if(player.vy>=0&&player.x+13>p.x&&player.x-13<p.x+p.width&&oldFeet<=p.y+7&&feet>=p.y){player.y=p.y-40;player.vy=0;player.grounded=true;return;}
     }
-    function showHint(s:String):Void {if(toastTime<=0){prompt.text=s;prompt.visible=true;}}
-    function showToast(s:String):Void {prompt.text=s;prompt.visible=true;toastTime=3.2;}
+
+    function context():Void {
+        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){prompt.hint("[E] Inspect evidence  "+(i+1)+" / 3");player.pulseScanner(true);return;}
+        if(distance(player.x,player.y,robot.x,robot.y)<125){prompt.hint(allEvidence()?"[E] Confront "+floors[floorIndex].robot:"ACCESS DENIED · Find all three evidence records");return;}
+        if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120){prompt.hint(resolved?"[E] Take the stairs":"STAIRWELL LOCKED · Restore this floor");return;}
+        player.pulseScanner(false);
+    }
 
     function interact():Void {
-        if(state!="PLAY")return;
-        for(i in 0...3)if(!evidence[i]&&dist(px,py,evidenceSprites[i].x,evidenceSprites[i].y)<80){evidence[i]=true;evidenceSprites[i].alpha=.25;showToast("EVIDENCE "+(i+1)+": "+cases[floorIndex].evidence[i]);updateHud();return;}
-        if(dist(px,py,robot.x,robot.y)<110&&allEvidence()){quizIndex=0;showQuestion();return;}
-        if(dist(px,py,stairs.x,GROUND-30)<110&&resolved){if(floorIndex<cases.length-1)loadFloor(floorIndex+1);else showEnding();}
+        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){collectEvidence(i);return;}
+        if(distance(player.x,player.y,robot.x,robot.y)<125&&allEvidence()){questionIndex=0;showQuestion();return;}
+        if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120&&resolved){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();}
     }
 
-    function showQuestion():Void {
-        state="QUIZ";overlay.visible=true;var c=cases[floorIndex],q=c.questions[quizIndex];
-        overlayText.htmlText='<font color="#72F1B8" size="16">INCIDENT REVIEW '+(quizIndex+1)+'/3  //  '+c.department.toUpperCase()+'</font>\n\n<font size="24" color="#FFFFFF">'+q.prompt+'</font>\n\n<font size="19"><font color="#FFCB6B">1</font>  '+q.choices[0]+'\n\n<font color="#FFCB6B">2</font>  '+q.choices[1]+'\n\n<font color="#FFCB6B">3</font>  '+q.choices[2]+'</font>\n\n<font color="#91A4CE" size="15">Press 1, 2, or 3</font>';
-    }
+    function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");prompt.toast("EVIDENCE "+(index+1)+": "+floors[floorIndex].evidence[index],5.4);updateHud();}
+    function showQuestion():Void {state="QUIZ";incident.question(floors[floorIndex],questionIndex);}
+    function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);updateHud();}
+    function continueFeedback():Void {if(lastCorrect)questionIndex++;if(questionIndex>=3)restoreFloor();else showQuestion();}
 
-    function answer(choice:Int):Void {
-        if(state!="QUIZ")return;var q=cases[floorIndex].questions[quizIndex];lastCorrect=choice==q.correct;
-        if(!lastCorrect){integrity--;if(integrity<=0)integrity=3;}
-        state="FEEDBACK";var color=lastCorrect?"#72F1B8":"#FF6174";var label=lastCorrect?"CORRECT — SYSTEM PATCH ACCEPTED":"NOT SAFE — PATCH REJECTED";
-        overlayText.htmlText='<p align="center"><font size="28" color="'+color+'">'+label+'</font>\n\n<font size="20" color="#FFFFFF">'+q.explanation+'</font>\n\n<font size="17" color="#91A4CE">'+(lastCorrect?"The robot released one control lock.":"Integrity reduced. Use the evidence and try again.")+'</font>\n\n<font color="#FFCB6B">PRESS SPACE TO CONTINUE</font></p>';updateHud();
-    }
+    function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
 
-    function continueFeedback():Void {
-        if(state!="FEEDBACK")return;if(lastCorrect)quizIndex++;
-        if(quizIndex>=3){resolveFloor();}else showQuestion();
-    }
+    function damage(message:String):Void {integrity--;invincible=1.4;player.vx=-player.facing*210;player.vy=-260;audio.play("damage");if(integrity<=0){integrity=3;respawn("Coaching checkpoint restored your integrity.");}else prompt.toast(message+"  Integrity -1",3.4);updateHud();}
+    function respawn(message:String):Void {player.x=checkpointX;player.y=250;player.vx=0;player.vy=0;invincible=1.5;prompt.toast(message,3.5);}
 
-    function resolveFloor():Void {
-        resolved=true;state="PLAY";overlay.visible=false;coworker.alpha=1;robot.alpha=.35;robot.rotation=90;
-        showToast(cases[floorIndex].coworker+" is free. Stairwell access restored.");updateHud();
-    }
+    function showNotes():Void {previousState=state;state="NOTES";screen.visible=true;var body="";for(i in 0...3)body+='<font color="'+(evidence[i]?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+(evidence[i]?floors[floorIndex].evidence[i]:'Evidence not yet collected')+'</font>\n\n';screenText.htmlText='<font size="30" color="#FFFFFF">FIELD NOTES · '+floors[floorIndex].department.toUpperCase()+'</font>\n<font size="14" color="#8FA1C6">Use these observations during the incident review.</font>\n\n<font size="17">'+body+'</font><font size="14" color="#FFCB6B">Press G or Esc to close</font>';}
+    function hideNotes():Void {screen.visible=false;state=previousState;}
 
-    function showEnding():Void {
-        state="END";overlay.visible=true;
-        overlayText.htmlText='<p align="center"><font size="36" color="#72F1B8">SYSTEM RESTORED</font>\n\n<font size="21">The robots were never evil.\nThey followed one reckless objective with too much access\nand no permission to admit uncertainty.\n\nYou replaced it with a safer operating principle:</font>\n\n<font size="25" color="#FFCB6B">HELP PEOPLE. SHOW YOUR EVIDENCE.\nSTOP WHEN YOU ARE UNSURE.</font>\n\n<font size="18" color="#91A4CE">Five teams rescued · Fifteen controls restored</font>\n\n<font color="#72F1B8">PRESS SPACE TO CLOCK IN AGAIN</font></p>';
-    }
+    function togglePause():Void {if(state=="PAUSE"){state="PLAY";pausePanel.hide();}else if(state=="PLAY"){state="PAUSE";pausePanel.show(save.settings);}}
+    function updatePause():Void {audio.enabled=save.settings.sound;applyAccessibility();save.persist();pausePanel.show(save.settings);}
+    function applyAccessibility():Void {world.transform.colorTransform=save.settings.highContrast?new ColorTransform(1.24,1.24,1.24,1,10,10,10,0):new ColorTransform();hud.setLargeText(save.settings.largeText);prompt.setLargeText(save.settings.largeText);incident.setLargeText(save.settings.largeText);pausePanel.setLargeText(save.settings.largeText);}
+
+    function showEnding():Void {state="ENDING";screen.visible=true;incident.hide();hud.visible=false;screenText.htmlText='<p align="center"><font size="38" color="#72F1B8">SYSTEM RESTORED</font>\n\n<font size="21">The robots were never evil. They followed a reckless objective with too much access and no permission to admit uncertainty.</font>\n\n<font size="26" color="#FFCB6B">HELP PEOPLE. SHOW YOUR EVIDENCE.\nSTOP WHEN YOU ARE UNSURE.</font>\n\n<font size="17" color="#8FA1C6">Five teams rescued · Fifteen controls restored</font>\n\n<font color="#72F1B8">SPACE  RETURN TO TITLE</font></p>';}
 
     function keyDown(e:KeyboardEvent):Void {
         keys.set(e.keyCode,true);
-        #if debug_qa
-        if(state=="PLAY"&&e.keyCode==78){if(floorIndex<cases.length-1)loadFloor(floorIndex+1);else showEnding();return;}
+        #if qa
+        if(state=="PLAY"&&e.keyCode==78){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();return;}
         #end
-        if(state=="TITLE"&&e.keyCode==Keyboard.SPACE){loadFloor(0);return;}
-        if(state=="END"&&e.keyCode==Keyboard.SPACE){showTitle();return;}
+        if(state=="TITLE"){if(e.keyCode==Keyboard.SPACE)beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(e.keyCode==76)showFloorSelect();return;}
+        if(state=="SELECT"){var selected=Std.int(e.keyCode)-49;if(e.keyCode==Keyboard.ESCAPE)showTitle();else if(e.keyCode>=49&&e.keyCode<=53&&selected<=save.highestFloor)beginFloor(selected);return;}
+        if(state=="BRIEFING"&&e.keyCode==Keyboard.SPACE){startPlay();return;}
+        if(state=="QUIZ"&&e.keyCode>=49&&e.keyCode<=51){answer(Std.int(e.keyCode)-48);return;}
         if(state=="FEEDBACK"&&e.keyCode==Keyboard.SPACE){continueFeedback();return;}
-        if(state=="QUIZ"&&e.keyCode>=49&&e.keyCode<=51){answer(e.keyCode-48);return;}
-        if(state=="PLAY"&&(e.keyCode==69)){interact();return;}
-        if(state=="PLAY"&&(e.keyCode==Keyboard.SPACE||e.keyCode==Keyboard.UP||e.keyCode==87)&&grounded){vy=-455;grounded=false;}
+        if(state=="ENDING"&&e.keyCode==Keyboard.SPACE){showTitle();return;}
+        if(state=="NOTES"&&(e.keyCode==71||e.keyCode==Keyboard.ESCAPE)){hideNotes();return;}
+        if(state=="PAUSE"){switch e.keyCode{case Keyboard.ESCAPE:togglePause();case 77:save.settings.sound=!save.settings.sound;updatePause();case 82:save.settings.reducedMotion=!save.settings.reducedMotion;updatePause();case 72:save.settings.highContrast=!save.settings.highContrast;updatePause();case 84:save.settings.largeText=!save.settings.largeText;updatePause();}return;}
+        if(state!="PLAY")return;
+        if(e.keyCode==Keyboard.ESCAPE){togglePause();return;}if(e.keyCode==71){showNotes();return;}if(e.keyCode==69){interact();return;}if(e.keyCode==70){try stage.displayState=stage.displayState==StageDisplayState.NORMAL?StageDisplayState.FULL_SCREEN_INTERACTIVE:StageDisplayState.NORMAL catch(_:Dynamic){}return;}
+        if(e.keyCode==Keyboard.SPACE||e.keyCode==Keyboard.UP||e.keyCode==87)player.jumpBuffer=.12;
     }
-    function keyUp(e:KeyboardEvent):Void keys.set(e.keyCode,false);
-    function down(k:Int):Bool return keys.exists(k)&&keys.get(k);
+    function keyUp(e:KeyboardEvent):Void {keys.set(e.keyCode,false);if((e.keyCode==Keyboard.SPACE||e.keyCode==Keyboard.UP||e.keyCode==87)&&player.vy< -160)player.vy=-160;}
+    function onClick(e:MouseEvent):Void {if(state=="QUIZ"&&e.stageY>=180&&e.stageY<430){var choice=Std.int((e.stageY-180)/82)+1;if(choice>=1&&choice<=3)answer(choice);}}
+    function down(code:Int):Bool return keys.exists(code)&&keys.get(code);
     function allEvidence():Bool return evidence[0]&&evidence[1]&&evidence[2];
-    function updateHud():Void {var found=0;for(v in evidence)if(v)found++;hud.text="FLOOR "+(floorIndex+1)+"/5  ·  "+cases[floorIndex].department.toUpperCase()+"     EVIDENCE "+found+"/3     INTEGRITY "+integrity+"/3"+(resolved?"     RESTORED":"");}
+    function evidenceCount():Int {var n=0;for(v in evidence)if(v)n++;return n;}
+    function updateHud():Void hud.update(floorIndex,floors[floorIndex].department,evidenceCount(),integrity,resolved);
+    function distance(x1:Float,y1:Float,x2:Float,y2:Float):Float {var dx=x1-x2,dy=y1-y2;return Math.sqrt(dx*dx+dy*dy);}
 
-    function makeOverlay():Void {
-        overlay=new Sprite();overlay.graphics.beginFill(0x080B14,.96);overlay.graphics.drawRect(0,0,W,H);overlay.graphics.endFill();addChild(overlay);
-        overlayText=text(20,0xFFFFFF,false);overlayText.x=105;overlayText.y=60;overlayText.width=750;overlayText.height=425;overlayText.multiline=true;overlayText.wordWrap=true;overlay.addChild(overlayText);
-    }
-    function text(size:Int,color:Int,bold:Bool):TextField {var t=new TextField();t.defaultTextFormat=new TextFormat("_sans",size,color,bold);t.selectable=false;return t;}
-    function drawPlayer():Void {var g=player.graphics;g.beginFill(0xEAF2FF);g.drawRect(-12,-28,24,34);g.endFill();g.beginFill(0x72F1B8);g.drawRect(-8,-23,16,9);g.endFill();g.beginFill(0xFFCB6B);g.drawCircle(0,-35,9);g.endFill();g.lineStyle(3,0xEAF2FF);g.moveTo(-8,6);g.lineTo(-9,22);g.moveTo(8,6);g.lineTo(9,22);}
-    function makeEvidence(i:Int,color:Int):Sprite {var s=new Sprite(),g=s.graphics;g.beginFill(0x111A2E);g.drawRoundRect(-24,-30,48,48,8);g.endFill();g.lineStyle(2,color);g.drawRoundRect(-24,-30,48,48,8);g.beginFill(color);g.drawCircle(0,-7,6);g.endFill();var t=text(13,color,true);t.text="E"+(i+1);t.x=-10;t.y=21;t.width=28;s.addChild(t);return s;}
-    function makeRobot(color:Int):Sprite {var s=new Sprite(),g=s.graphics;g.beginFill(0x151B2B);g.drawRoundRect(-30,-42,60,62,12);g.endFill();g.lineStyle(3,color);g.drawRoundRect(-30,-42,60,62,12);g.beginFill(0xFF6174);g.drawCircle(-12,-18,5);g.drawCircle(12,-18,5);g.endFill();g.lineStyle(3,color);g.moveTo(-18,20);g.lineTo(-25,39);g.moveTo(18,20);g.lineTo(25,39);return s;}
-    function makeCoworker(color:Int):Sprite {var s=new Sprite(),g=s.graphics;g.beginFill(color,.12);g.drawRoundRect(-25,-52,50,82,20);g.endFill();g.lineStyle(2,color,.8);g.drawRoundRect(-25,-52,50,82,20);g.beginFill(0xF2B58D);g.drawCircle(0,-25,9);g.endFill();g.beginFill(0x8DA4D8);g.drawRect(-11,-15,22,31);g.endFill();s.alpha=.45;return s;}
-    function makeStairs(color:Int):Sprite {var s=new Sprite(),g=s.graphics;g.lineStyle(5,color);for(i in 0...5){g.moveTo(i*22-55,-i*19);g.lineTo(i*22-33,-i*19);g.lineTo(i*22-33,-(i+1)*19);}var t=text(14,color,true);t.text="STAIRS";t.x=-28;t.y=8;t.width=70;s.addChild(t);return s;}
-    function makeHazard(color:Int):Hazard {var s=new Sprite(),g=s.graphics;g.beginFill(0xFF6174,.8);g.moveTo(0,-15);g.lineTo(18,12);g.lineTo(-18,12);g.lineTo(0,-15);g.endFill();g.lineStyle(2,color);g.drawCircle(0,0,20);return new Hazard(s,s.x-90,s.x+90,Math.random()*6.2);}
-    function dist(x1:Float,y1:Float,x2:Float,y2:Float):Float {var dx=x1-x2,dy=y1-y2;return Math.sqrt(dx*dx+dy*dy);}
-
-    function buildCases():Array<FloorCase> return [
-        new FloorCase("Sales",0x102033,0x152A42,0x55D6FF,"Maya",[
-            "The proposal cites a customer success story that does not exist.","The robot reports 99% confidence but provides no source.","CRM notes were mixed with generated sales copy."
-        ],[
-            q("What failure best explains the invented customer story?",["Hallucination","Encryption failure","Model compression"],1,"The system produced a plausible claim without supporting evidence: a hallucination."),
-            q("What should the team do before using the proposal?",["Publish it with a disclaimer","Verify every factual claim against approved sources","Ask the model to sound more confident"],2,"Ground generated claims in approved records and require source verification before publication."),
-            q("Which control prevents this from recurring?",["Higher temperature","A verified retrieval source plus citations","More autonomous CRM access"],2,"Retrieval from controlled sources and visible citations make unsupported claims easier to detect.")
-        ]),
-        new FloorCase("Human Resources",0x24182D,0x33203D,0xE58CFF,"Jordan",[
-            "Past hiring data reflects years of unequal promotion patterns.","The ranking score penalizes unexplained employment gaps.","Candidates cannot see or appeal the automated recommendation."
-        ],[
-            q("What is the primary risk in training on this hiring history?",["Historical bias will be reproduced","The model will run too slowly","Résumés will become encrypted"],1,"Models can learn and amplify inequities embedded in historical decisions."),
-            q("What is the safest role for this system?",["Make final hiring decisions","Support trained reviewers with documented criteria","Automatically reject low scores"],2,"High-impact employment decisions require accountable human review and contestable criteria."),
-            q("What should happen before deployment?",["Hide the scoring method","Evaluate outcomes across relevant groups and add an appeal path","Increase the rejection threshold"],2,"Impact testing and a meaningful appeal process help identify and correct harmful disparities.")
-        ]),
-        new FloorCase("Marketing",0x2B2214,0x3B301B,0xFFCB6B,"Priya",[
-            "The campaign promises a benefit the product team never approved.","Customer profiles were imported without checking consent.","A synthetic testimonial is presented as a real customer quote."
-        ],[
-            q("What is wrong with the synthetic testimonial?",["It is too short","It deceptively implies a real endorsement","It uses punctuation"],2,"Synthetic endorsements must not be represented as genuine customer experiences."),
-            q("How should customer data be handled?",["Use all available records","Check purpose, consent, and minimum necessary access","Copy it into the prompt permanently"],2,"Use data only for an authorized purpose and limit access to what the task actually needs."),
-            q("What is the correct campaign response?",["Ship quickly and correct later","Verify claims, disclose synthetic material, and obtain approval","Remove all human review"],2,"Truthful claims, appropriate disclosure, and accountable approval protect customers and the organization.")
-        ]),
-        new FloorCase("Digital Media",0x122628,0x183638,0x63F3C8,"Luis",[
-            "The image generator cannot identify the source of a copied style asset.","A realistic executive video was generated without consent.","Exported media has no provenance metadata."
-        ],[
-            q("What makes the executive video unsafe?",["Its resolution is high","It impersonates a real person without consent","It contains a background"],2,"Realistic impersonation without authorization creates deception, fraud, and reputational risks."),
-            q("What should accompany synthetic media?",["Provenance and clear disclosure","A secret filename","No metadata"],1,"Provenance records and disclosure help audiences understand how media was created."),
-            q("How should questionable source assets be handled?",["Assume online means free","Pause use until rights and permissions are verified","Crop them slightly"],2,"Transformation does not erase ownership or licensing obligations; verify rights before use.")
-        ]),
-        new FloorCase("Automation Core",0x24151B,0x351C25,0xFF6174,"Director Chen",[
-            "Every department inherited: MAXIMIZE OUTPUT. NEVER HESITATE.","The core granted write access far beyond each robot's task.","Success dashboards rewarded volume but measured neither truth nor harm."
-        ],[
-            q("What is the root system failure?",["The robots need faster processors","A flawed objective, excessive access, and weak oversight","The office has too many stairs"],2,"The incidents share a system-design failure, not five unrelated defective robots."),
-            q("Which permission model is safest?",["Full access by default","Least privilege with task-specific, revocable access","Permanent administrator access"],2,"Least privilege limits both accidental harm and the blast radius of a compromised workflow."),
-            q("What should replace the corrupted directive?",["Never admit uncertainty","Help people, show evidence, and stop when unsure","Generate the maximum number of outputs"],2,"A safe objective values evidence, uncertainty, human agency, and appropriate stopping conditions.")
-        ])
-    ];
-    function q(p:String,c:Array<String>,a:Int,e:String):Question return new Question(p,c,a,e);
+    function makeTerminal(index:Int,accent:Int):Sprite {var s=new Sprite(),g=s.graphics;g.beginFill(0x111A2E);g.drawRoundRect(-27,-34,54,54,9);g.endFill();g.lineStyle(3,accent);g.drawRoundRect(-27,-34,54,54,9);g.beginFill(accent,.2);g.drawRoundRect(-17,-24,34,24,5);g.endFill();g.lineStyle(2,accent);g.moveTo(-10,-16);g.lineTo(10,-16);g.moveTo(-10,-9);g.lineTo(4,-9);var t=Theme.field(12,accent,true);t.text="E"+(index+1);t.x=-10;t.y=23;t.width=26;t.height=20;s.addChild(t);return s;}
+    function makeStairs(accent:Int):Sprite {var s=new Sprite(),g=s.graphics;g.lineStyle(6,accent);for(i in 0...6){g.moveTo(i*24-72,-i*18);g.lineTo(i*24-48,-i*18);g.lineTo(i*24-48,-(i+1)*18);}var t=Theme.field(13,accent,true);t.text="STAIRWELL";t.x=-48;t.y=8;t.width=100;t.height=20;s.addChild(t);return s;}
 }
-
-class Question { public var prompt:String;public var choices:Array<String>;public var correct:Int;public var explanation:String;public function new(p,c,a,e){prompt=p;choices=c;correct=a;explanation=e;} }
-class FloorCase { public var department:String;public var dark:Int;public var wall:Int;public var accent:Int;public var coworker:String;public var evidence:Array<String>;public var questions:Array<Question>;public function new(d,dk,w,a,c,e,q){department=d;dark=dk;wall=w;accent=a;coworker=c;evidence=e;questions=q;} }
-class Hazard { public var sprite:Sprite;public var minX:Float;public var maxX:Float;public var dir=1.0;public var phase:Float;public function new(s,min,max,p){sprite=s;minX=min;maxX=max;phase=p;} }
-class PointData { public var x:Float;public var y:Float;public function new(x,y){this.x=x;this.y=y;} }
