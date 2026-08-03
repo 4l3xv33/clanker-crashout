@@ -14,7 +14,7 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf",
+    url: "./game.swf?v=mobile-dpad-2",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
