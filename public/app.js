@@ -27,7 +27,7 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=mobile-landscape-6",
+    url: "./game.swf?v=character-animation-1",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",

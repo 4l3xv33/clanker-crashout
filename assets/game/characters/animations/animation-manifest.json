@@ -1,0 +1,41 @@
+{
+  "character": "data-scientist-v2",
+  "anchor": "bottom-center",
+  "animations": {
+    "run": {
+      "frames": 8,
+      "fps": 12,
+      "loop": true,
+      "frameSize": [384, 512],
+      "path": "frames/run/frame-{frame:02}.png"
+    },
+    "jump": {
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "frameSize": [512, 512],
+      "path": "frames/jump/frame-{frame:02}.png"
+    },
+    "interact": {
+      "frames": 6,
+      "fps": 10,
+      "loop": false,
+      "frameSize": [512, 512],
+      "path": "frames/interact/frame-{frame:02}.png"
+    },
+    "scan": {
+      "frames": 6,
+      "fps": 8,
+      "loop": true,
+      "frameSize": [512, 512],
+      "path": "frames/scan/frame-{frame:02}.png"
+    },
+    "damage": {
+      "frames": 4,
+      "fps": 12,
+      "loop": false,
+      "frameSize": [496, 793],
+      "path": "frames/damage/frame-{frame:02}.png"
+    }
+  }
+}

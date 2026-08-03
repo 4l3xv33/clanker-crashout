@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="704" viewBox="-32 -56 64 88">
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <!-- Legs and shoes sit behind the body, matching Player.hx's display order. -->
+    <path d="M-7 15V33" fill="none" stroke="#16243b" stroke-width="6"/>
+    <path d="M-7 33H0" fill="none" stroke="#e8eef7" stroke-width="5"/>
+    <path d="M7 15V33" fill="none" stroke="#16243b" stroke-width="6"/>
+    <path d="M7 33H14" fill="none" stroke="#e8eef7" stroke-width="5"/>
+
+    <!-- Lab coat, shirt, accent stripe, head, hair, and glasses. -->
+    <path d="M-13-27H13L19 12 7 16 0 3-7 16-19 12Z" fill="#e8eef7"/>
+    <path d="M-8-23H8V6H-8Z" fill="#14233a"/>
+    <path d="M-7-20H7V-14H-7Z" fill="#72f1b8"/>
+    <circle cx="0" cy="-38" r="11" fill="#b56f4a"/>
+    <path d="M-10-43C0-56 11-44 11-44L7-48C-2-55-11-44-11-44Z" fill="#101728"/>
+    <rect x="-10" y="-42" width="9" height="7" rx="2" fill="none" stroke="#55d6ff" stroke-width="2"/>
+    <rect x="1" y="-42" width="9" height="7" rx="2" fill="none" stroke="#55d6ff" stroke-width="2"/>
+    <path d="M-1-39H1" fill="none" stroke="#55d6ff" stroke-width="2"/>
+
+    <!-- Hand scanner. -->
+    <g transform="translate(13 -10)">
+      <rect x="0" y="-17" width="16" height="25" rx="4" fill="#101a2d" stroke="#72f1b8" stroke-width="2"/>
+      <path d="M4-12H12V-3H4Z" fill="#55d6ff"/>
+    </g>
+  </g>
+</svg>

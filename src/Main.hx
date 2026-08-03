@@ -151,6 +151,7 @@ class Main extends Sprite {
     }
 
     function context():Void {
+        player.pulseScanner(false);
         for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){prompt.hint("[E] Inspect evidence  "+(i+1)+" / 3");player.pulseScanner(true);return;}
         if(distance(player.x,player.y,robot.x,robot.y)<125){prompt.hint(allEvidence()?"[E] Confront "+floors[floorIndex].robot:"ACCESS DENIED · Find all three evidence records");return;}
         if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120){prompt.hint(resolved?"[E] Take the stairs":"STAIRWELL LOCKED · Restore this floor");return;}
@@ -158,9 +159,9 @@ class Main extends Sprite {
     }
 
     function interact():Void {
-        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){collectEvidence(i);return;}
-        if(distance(player.x,player.y,robot.x,robot.y)<125&&allEvidence()){questionIndex=0;showQuestion();return;}
-        if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120&&resolved){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();}
+        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){player.playAction("interact");collectEvidence(i);return;}
+        if(distance(player.x,player.y,robot.x,robot.y)<125&&allEvidence()){player.playAction("interact");questionIndex=0;showQuestion();return;}
+        if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120&&resolved){player.playAction("interact");if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();}
     }
 
     function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");prompt.toast("EVIDENCE "+(index+1)+": "+floors[floorIndex].evidence[index],5.4);updateHud();}
@@ -170,7 +171,7 @@ class Main extends Sprite {
 
     function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();touch.visible=touchEnabled;robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
 
-    function damage(message:String):Void {integrity--;invincible=1.4;player.vx=-player.facing*210;player.vy=-260;audio.play("damage");if(integrity<=0){integrity=3;respawn("Coaching checkpoint restored your integrity.");}else prompt.toast(message+"  Integrity -1",3.4);updateHud();}
+    function damage(message:String):Void {integrity--;invincible=1.4;player.playAction("damage");player.vx=-player.facing*210;player.vy=-260;audio.play("damage");if(integrity<=0){integrity=3;respawn("Coaching checkpoint restored your integrity.");}else prompt.toast(message+"  Integrity -1",3.4);updateHud();}
     function respawn(message:String):Void {player.x=checkpointX;player.y=250;player.vx=0;player.vy=0;invincible=1.5;prompt.toast(message,3.5);}
 
     function showNotes():Void {previousState=state;state="NOTES";touch.visible=false;touch.reset();screen.visible=true;if(touchEnabled){buttonLabel(actionButton,"CLOSE NOTES");actionButton.visible=true;}var body="";for(i in 0...3)body+='<font color="'+(evidence[i]?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+(evidence[i]?floors[floorIndex].evidence[i]:'Evidence not yet collected')+'</font>\n\n';screenText.htmlText='<font size="30" color="#FFFFFF">FIELD NOTES · '+floors[floorIndex].department.toUpperCase()+'</font>\n<font size="14" color="#8FA1C6">Use these observations during the incident review.</font>\n\n<font size="17">'+body+'</font><font size="14" color="#FFCB6B">'+(touchEnabled?'Use Close Notes to return':'Press G or Esc to close')+'</font>';}

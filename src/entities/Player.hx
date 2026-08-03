@@ -1,6 +1,15 @@
 package entities;
 
+import entities.PlayerArt.DamageArt;
+import entities.PlayerArt.InteractArt;
+import entities.PlayerArt.JumpArt;
+import entities.PlayerArt.RunArt;
+import entities.PlayerArt.ScanArt;
+import flash.display.Bitmap;
+import flash.display.BitmapData;
 import flash.display.Sprite;
+import flash.geom.Point;
+import flash.geom.Rectangle;
 
 class Player extends Sprite {
     public var vx:Float = 0;
@@ -9,47 +18,85 @@ class Player extends Sprite {
     public var coyote:Float = 0;
     public var jumpBuffer:Float = 0;
     public var facing:Int = 1;
-    var body:Sprite;
-    var scanner:Sprite;
-    var legA:Sprite;
-    var legB:Sprite;
-    var time:Float = 0;
+    static inline var FRAME_SIZE:Int = 256;
+    static inline var ART_SCALE:Float = .46;
+    var art:Bitmap;
+    var animations:Map<String,Array<BitmapData>>;
+    var current:String = "";
+    var forced:String = "";
+    var frameIndex:Int = 0;
+    var frameClock:Float = 0;
+    var scannerActive:Bool = false;
 
     public function new() {
         super();
-        drawRig();
+        animations = new Map();
+        animations.set("run", slice(new RunArt(0,0), 8));
+        animations.set("jump", slice(new JumpArt(0,0), 6));
+        animations.set("interact", slice(new InteractArt(0,0), 6));
+        animations.set("scan", slice(new ScanArt(0,0), 6));
+        animations.set("damage", slice(new DamageArt(0,0), 4));
+        animations.set("idle", [animations.get("interact")[0]]);
+        art = new Bitmap(animations.get("idle")[0]);
+        art.smoothing = true;
+        art.scaleX = art.scaleY = ART_SCALE;
+        art.x = -FRAME_SIZE * ART_SCALE / 2;
+        art.y = 40 - 240 * ART_SCALE;
+        addChild(art);
+        current = "idle";
     }
 
-    function drawRig():Void {
-        body = new Sprite(); addChild(body);
-        var coat = body.graphics;
-        coat.beginFill(0xE8EEF7); coat.moveTo(-13,-27); coat.lineTo(13,-27); coat.lineTo(19,12); coat.lineTo(7,16); coat.lineTo(0,3); coat.lineTo(-7,16); coat.lineTo(-19,12); coat.lineTo(-13,-27); coat.endFill();
-        coat.beginFill(0x14233A); coat.drawRect(-8,-23,16,29); coat.endFill();
-        coat.beginFill(0x72F1B8); coat.drawRect(-7,-20,14,6); coat.endFill();
-        coat.beginFill(0xB56F4A); coat.drawCircle(0,-38,11); coat.endFill();
-        coat.beginFill(0x101728); coat.moveTo(-10,-43); coat.curveTo(0,-56,11,-44); coat.lineTo(7,-48); coat.curveTo(-2,-55,-11,-44); coat.endFill();
-        coat.lineStyle(2,0x55D6FF); coat.drawRoundRect(-10,-42,9,7,2); coat.drawRoundRect(1,-42,9,7,2); coat.moveTo(-1,-39); coat.lineTo(1,-39);
-        legA = leg(-7,15); legB = leg(7,15); addChildAt(legA,0); addChildAt(legB,0);
-        scanner = new Sprite(); var g=scanner.graphics; g.beginFill(0x101A2D);g.drawRoundRect(0,-17,16,25,4);g.endFill();g.lineStyle(2,0x72F1B8);g.drawRoundRect(0,-17,16,25,4);g.beginFill(0x55D6FF);g.drawRect(4,-12,8,9);g.endFill();scanner.x=13;scanner.y=-10;body.addChild(scanner);
+    function slice(sheet:BitmapData, count:Int):Array<BitmapData> {
+        var result:Array<BitmapData> = [];
+        for (i in 0...count) {
+            var frame = new BitmapData(FRAME_SIZE, FRAME_SIZE, true, 0);
+            frame.copyPixels(sheet, new Rectangle(i * FRAME_SIZE, 0, FRAME_SIZE, FRAME_SIZE), new Point(0,0));
+            result.push(frame);
+        }
+        sheet.dispose();
+        return result;
     }
-
-    function leg(x:Float,y:Float):Sprite {var s=new Sprite();s.x=x;s.y=y;var g=s.graphics;g.lineStyle(6,0x16243B);g.moveTo(0,0);g.lineTo(0,18);g.lineStyle(5,0xE8EEF7);g.moveTo(0,18);g.lineTo(7,18);return s;}
 
     public function animate(dt:Float, moving:Bool, scanning:Bool, reducedMotion:Bool):Void {
-        time += dt;
         scaleX = facing;
-        scanner.rotation = scanning ? -18 : 0;
-        if (reducedMotion) { body.y=0;legA.rotation=0;legB.rotation=0;return; }
-        if (!grounded) {
-            body.rotation = vx/450;
-            legA.rotation = vy < 0 ? -12 : 12; legB.rotation = -legA.rotation;
-        } else if (moving) {
-            var stride = Math.sin(time*12)*24;
-            legA.rotation = stride; legB.rotation = -stride; body.y = Math.abs(Math.sin(time*12))*1.5; body.rotation=0;
-        } else {
-            legA.rotation=0;legB.rotation=0;body.rotation=0;body.y=Math.sin(time*2.5)*1.2;
+        scannerActive = scannerActive || scanning;
+        var desired = forced != "" ? forced : (!grounded ? "jump" : (scannerActive ? "scan" : (moving ? "run" : "idle")));
+        if (desired != current) select(desired);
+        if (!reducedMotion) advance(dt);
+        scannerActive = false;
+    }
+
+    function select(name:String):Void {
+        current = name;
+        frameIndex = 0;
+        frameClock = 0;
+        showFrame();
+    }
+
+    function advance(dt:Float):Void {
+        var fps = switch current {case "run":12;case "jump":10;case "interact":10;case "scan":8;case "damage":12;default:0;}
+        if (fps == 0) return;
+        frameClock += dt;
+        var frames = animations.get(current);
+        while (frameClock >= 1 / fps) {
+            frameClock -= 1 / fps;
+            frameIndex++;
+            if (frameIndex >= frames.length) {
+                if (forced != "") {forced = "";frameIndex = frames.length - 1;}
+                else if (current == "run" || current == "scan") frameIndex = 0;
+                else frameIndex = frames.length - 1;
+            }
+            showFrame();
         }
     }
 
-    public function pulseScanner(active:Bool):Void {scanner.alpha=active?1:.72;scanner.scaleX=scanner.scaleY=active?1.12:1;}
+    function showFrame():Void art.bitmapData = animations.get(current)[frameIndex];
+
+    public function playAction(name:String):Void {
+        if (!animations.exists(name)) return;
+        forced = name;
+        select(name);
+    }
+
+    public function pulseScanner(active:Bool):Void scannerActive = active;
 }

@@ -2,6 +2,8 @@ import { readFile, stat } from "node:fs/promises";
 
 const content = await readFile(new URL("../src/data/GameContent.hx", import.meta.url), "utf8");
 const main = await readFile(new URL("../src/Main.hx", import.meta.url), "utf8");
+const player = await readFile(new URL("../src/entities/Player.hx", import.meta.url), "utf8");
+const playerArt = await readFile(new URL("../src/entities/PlayerArt.hx", import.meta.url), "utf8");
 const productionBuild = await readFile(new URL("../build.hxml", import.meta.url), "utf8");
 const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
@@ -24,6 +26,10 @@ for (const required of ["./ruffle/ruffle.js", 'id="player"']) {
 }
 if (!app.includes("./game.swf")) failures.push("Website loader is missing ./game.swf");
 if (!main.includes("TitleArt")) failures.push("The generated key art is not embedded in the SWF");
+for (const animation of ["run", "jump", "interact", "scan", "damage"]) {
+  if (!playerArt.includes(`game-sheets/${animation}.png`)) failures.push(`The ${animation} player animation is not embedded in the SWF`);
+}
+if (!player.includes('playAction(name:String)') || !main.includes('player.playAction("damage")')) failures.push("Player action animations are not connected to gameplay");
 if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");

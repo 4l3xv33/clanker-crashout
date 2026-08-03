@@ -59,7 +59,7 @@ src/
 └── world/                  Department layouts and environmental rendering
 ```
 
-Editable visual references live in `assets/concept`. The title artwork in `assets/game` is embedded directly into the compiled SWF. Runtime characters and environments use code-native vector drawing for crisp, lightweight SWF animation. The GitHub Pages shell is intentionally game-only and fills the browser viewport without page scrolling.
+Editable visual references live in `assets/concept`. The title artwork and the player's normalized animation sheets in `assets/game` are embedded directly into the compiled SWF. The player uses transparent bitmap frame animation for run, jump, interact, scan, and damage states; robots, coworkers, hazards, and environments retain lightweight code-native vector drawing. Source sheets, individual frames, timing metadata, and animated previews live under `assets/game/characters/animations`. The GitHub Pages shell is intentionally game-only and fills the browser viewport without page scrolling.
 
 ## Editing educational content
 
