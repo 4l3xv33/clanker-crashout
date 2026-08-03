@@ -34,6 +34,7 @@ if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) f
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");
 if (!app.includes('document.addEventListener("pointerup"') || !app.includes("canNativeLock")) failures.push("Landscape lock must capture the first user gesture outside Ruffle");
+if (!app.includes('classList.toggle("orientation-fallback", touchMode)')) failures.push("Touch devices must render the initial Ruffle view in landscape before the first gesture");
 if (!styles.includes("html.orientation-fallback") || !/transform\s*:\s*rotate/i.test(styles)) failures.push("Unsupported browsers need an isolated landscape fallback");
 if (main.includes("SPACE  CLOCK IN") || main.includes("PRESS SPACE TO ENTER")) failures.push("Game entry still depends on a Space prompt");
 

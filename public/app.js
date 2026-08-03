@@ -22,7 +22,9 @@
       : null;
   const canNativeLock = !!requestNativeFullscreen && typeof screen.orientation?.lock === "function" && !query.has("orientation-fallback");
   document.documentElement.classList.toggle("touch", touchMode);
-  document.documentElement.classList.toggle("orientation-fallback", touchMode && !canNativeLock);
+  // Render the very first Ruffle frame in landscape on every touch device.
+  // Native fullscreen/orientation lock takes over after the first legal gesture.
+  document.documentElement.classList.toggle("orientation-fallback", touchMode);
   player.setAttribute("aria-label", "ERROR 9 TO 5 Flash game");
   shell.replaceChildren(player);
 
@@ -57,8 +59,16 @@
   document.addEventListener("pointerup", lockLandscape, { capture: true, once: true });
   player.addEventListener("pointerdown", () => player.focus());
   screen.orientation?.addEventListener?.("change", () => {
-    if (touchMode && canNativeLock && (document.fullscreenElement || document.webkitFullscreenElement) && !screen.orientation.type.startsWith("landscape")) {
-      screen.orientation.lock("landscape").catch(() => {});
+    if (!touchMode) return;
+    if (screen.orientation.type.startsWith("landscape")) {
+      document.documentElement.classList.remove("orientation-fallback");
+      return;
+    }
+    document.documentElement.classList.add("orientation-fallback");
+    if (canNativeLock && (document.fullscreenElement || document.webkitFullscreenElement)) {
+      screen.orientation.lock("landscape")
+        .then(() => document.documentElement.classList.remove("orientation-fallback"))
+        .catch(() => document.documentElement.classList.add("orientation-fallback"));
     }
   });
   player.addEventListener("contextmenu", suppressHold, { capture: true });
