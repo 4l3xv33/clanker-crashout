@@ -12,13 +12,22 @@
 
   const ruffle = window.RufflePlayer.newest();
   const player = ruffle.createPlayer();
-  const touchMode = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || new URLSearchParams(location.search).has("touch");
+  const query = new URLSearchParams(location.search);
+  const touchMode = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || query.has("touch");
+  const root = document.documentElement;
+  const requestNativeFullscreen = root.requestFullscreen
+    ? () => root.requestFullscreen({ navigationUI: "hide" })
+    : root.webkitRequestFullscreen
+      ? () => root.webkitRequestFullscreen()
+      : null;
+  const canNativeLock = !!requestNativeFullscreen && typeof screen.orientation?.lock === "function" && !query.has("orientation-fallback");
   document.documentElement.classList.toggle("touch", touchMode);
+  document.documentElement.classList.toggle("orientation-fallback", touchMode && !canNativeLock);
   player.setAttribute("aria-label", "ERROR 9 TO 5 Flash game");
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=mobile-landscape-5",
+    url: "./game.swf?v=mobile-landscape-6",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
@@ -32,18 +41,23 @@
   async function lockLandscape() {
     player.focus();
     if (!touchMode) return;
+    var locked = false;
     try {
-      if (!document.fullscreenElement) await player.requestFullscreen({ navigationUI: "hide" });
+      if (!document.fullscreenElement && !document.webkitFullscreenElement && requestNativeFullscreen) await requestNativeFullscreen();
     } catch {}
     try {
-      if (screen.orientation?.lock) await screen.orientation.lock("landscape");
+      if (canNativeLock) {
+        await screen.orientation.lock("landscape");
+        locked = true;
+      }
     } catch {}
+    document.documentElement.classList.toggle("orientation-fallback", !locked);
   }
 
-  player.addEventListener("pointerdown", lockLandscape, { once: true });
+  document.addEventListener("pointerup", lockLandscape, { capture: true, once: true });
   player.addEventListener("pointerdown", () => player.focus());
   screen.orientation?.addEventListener?.("change", () => {
-    if (touchMode && document.fullscreenElement && !screen.orientation.type.startsWith("landscape")) {
+    if (touchMode && canNativeLock && (document.fullscreenElement || document.webkitFullscreenElement) && !screen.orientation.type.startsWith("landscape")) {
       screen.orientation.lock("landscape").catch(() => {});
     }
   });

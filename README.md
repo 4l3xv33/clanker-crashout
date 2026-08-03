@@ -19,7 +19,7 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | Esc | Pause and settings |
 | F | Fullscreen |
 
-Settings include sound, reduced motion, high contrast, and larger text preferences. After the first required touch gesture, mobile play enters fullscreen and uses the browser's native landscape lock. No CSS rotation is applied, preventing double rotation of the already-landscape game. Ruffle's menu, long-press browser menus, selection, and callouts are disabled. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
+Settings include sound, reduced motion, high contrast, and larger text preferences. The first touch is captured outside Ruffle to enter fullscreen and apply the browser's native landscape lock. CSS rotation is used only as a fallback when native locking is unavailable or rejected, so the two mechanisms never double-rotate the game. Ruffle's menu, long-press browser menus, selection, and callouts are disabled. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
 
 ## Game structure
 

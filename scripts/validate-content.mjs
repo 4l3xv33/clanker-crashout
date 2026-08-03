@@ -27,7 +27,8 @@ if (!main.includes("TitleArt")) failures.push("The generated key art is not embe
 if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");
-if (/transform\s*:\s*rotate/i.test(styles)) failures.push("CSS rotation would double-rotate the landscape game");
+if (!app.includes('document.addEventListener("pointerup"') || !app.includes("canNativeLock")) failures.push("Landscape lock must capture the first user gesture outside Ruffle");
+if (!styles.includes("html.orientation-fallback") || !/transform\s*:\s*rotate/i.test(styles)) failures.push("Unsupported browsers need an isolated landscape fallback");
 if (main.includes("SPACE  CLOCK IN") || main.includes("PRESS SPACE TO ENTER")) failures.push("Game entry still depends on a Space prompt");
 
 if (failures.length) {
