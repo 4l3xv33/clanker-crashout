@@ -9,6 +9,7 @@
   const ruffle = window.RufflePlayer.newest();
   const player = ruffle.createPlayer();
   const touchMode = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || new URLSearchParams(location.search).has("touch");
+  document.documentElement.classList.toggle("touch", touchMode);
   player.setAttribute("aria-label", "ERROR 9 TO 5 Flash game");
   shell.replaceChildren(player);
 
@@ -22,5 +23,17 @@
     shell.textContent = "The game could not start. Refresh to try again.";
   });
 
+  async function enterLandscape() {
+    player.focus();
+    if (!touchMode) return;
+    try {
+      if (!document.fullscreenElement && player.requestFullscreen) await player.requestFullscreen();
+    } catch {}
+    try {
+      if (screen.orientation?.lock) await screen.orientation.lock("landscape");
+    } catch {}
+  }
+
+  player.addEventListener("pointerdown", enterLandscape, { once: true });
   player.addEventListener("pointerdown", () => player.focus());
 })();

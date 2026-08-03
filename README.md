@@ -8,7 +8,8 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | --- | --- |
 | WASD / Arrow keys | Move and jump |
 | Mouse | Play, enter a floor, continue feedback, or choose an incident response |
-| Touch controls | Move, jump, interact, open notes, and pause on phones and tablets |
+| Touch D-pad | Left/right movement, up to jump, center hand to interact |
+| Touch utility buttons | Open notes and pause on phones and tablets |
 | Space | Jump |
 | E | Inspect evidence, confront a robot, use stairs |
 | G | Open field notes |
@@ -16,7 +17,7 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | Esc | Pause and settings |
 | F | Fullscreen |
 
-Settings include sound, reduced motion, high contrast, and larger text preferences. Touch devices receive an in-game control overlay; landscape orientation provides the largest play area. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
+Settings include sound, reduced motion, high contrast, and larger text preferences. Touch devices receive an in-game D-pad, fill the landscape viewport, and request fullscreen landscape orientation after the first tap where the browser permits it. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
 
 ## Game structure
 

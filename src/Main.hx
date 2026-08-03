@@ -76,12 +76,12 @@ class Main extends Sprite {
     public function new(){super();addEventListener(Event.ADDED_TO_STAGE,init);}
 
     function init(_:Event):Void {
-        stage.scaleMode=flash.display.StageScaleMode.SHOW_ALL;stage.align=flash.display.StageAlign.TOP_LEFT;stage.color=Theme.BG;
+        touchEnabled=Reflect.field(loaderInfo.parameters,"mobile")=="1";stage.scaleMode=touchEnabled?flash.display.StageScaleMode.EXACT_FIT:flash.display.StageScaleMode.SHOW_ALL;stage.align=flash.display.StageAlign.TOP_LEFT;stage.color=Theme.BG;
         floors=GameContent.floors();save=new SaveManager();audio=new SoundManager();audio.enabled=save.settings.sound;
         world=new Sprite();actors=new Sprite();addChild(world);
         player=new Player();
         hud=new Hud();addChild(hud);prompt=new PromptBar();addChild(prompt);incident=new IncidentPanel();addChild(incident);pausePanel=new PausePanel();addChild(pausePanel);makeScreen();
-        touchEnabled=Reflect.field(loaderInfo.parameters,"mobile")=="1";touch=new TouchControls(touchJump,touchUse,touchNotes,touchPause);addChild(touch);
+        touch=new TouchControls(touchJump,touchUse,touchNotes,touchPause);addChild(touch);if(touchEnabled)prompt.setTouchLayout();
         stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown);stage.addEventListener(KeyboardEvent.KEY_UP,keyUp);stage.addEventListener(MouseEvent.CLICK,onClick);addEventListener(Event.ENTER_FRAME,update);
         applyAccessibility();showTitle();
     }
