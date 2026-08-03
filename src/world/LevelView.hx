@@ -4,6 +4,7 @@ import data.FloorData;
 import flash.display.Bitmap;
 import flash.display.BitmapData;
 import flash.display.Sprite;
+import flash.filters.GlowFilter;
 import flash.geom.Rectangle;
 import world.LevelArt.FloorFiveArt;
 import world.LevelArt.FloorFourArt;
@@ -38,7 +39,9 @@ class LevelView extends Sprite {
     }
 
     function drawPlatform(layer:Sprite,p:Rectangle,data:FloorData):Void {
-        var g=layer.graphics;g.beginFill(0x0B1423,.98);g.drawRoundRect(p.x,p.y,p.width,p.height,6);g.endFill();g.lineStyle(1,0xDCE6F2,.45);g.drawRoundRect(p.x,p.y,p.width,p.height,6);g.beginFill(data.accent,.98);g.drawRect(p.x+4,p.y,p.width-8,3);g.endFill();g.beginFill(data.secondary,.16);g.drawRect(p.x+12,p.y+7,p.width-24,5);g.endFill();
+        var platform=new Sprite();platform.x=p.x;platform.y=p.y;layer.addChild(platform);
+        var g=platform.graphics;g.beginFill(0x081525,.99);g.drawRoundRect(0,0,p.width,p.height,6);g.endFill();g.lineStyle(2,0x5CDAFF,.92);g.drawRoundRect(0,0,p.width,p.height,6);g.beginFill(0x86E7FF,1);g.drawRect(5,0,p.width-10,3);g.endFill();g.beginFill(data.accent,.28);g.drawRect(12,7,p.width-24,5);g.endFill();
+        platform.filters=[new GlowFilter(0x20BFFF,.9,12,12,2,2,false,false)];
     }
 
     function layout(index:Int):Array<Rectangle> return switch index {

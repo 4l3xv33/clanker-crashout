@@ -25,5 +25,5 @@ class Hazard {
         var art=new Bitmap(frame);art.smoothing=true;art.scaleX=art.scaleY=ART_SCALE;art.x=-FRAME_SIZE*ART_SCALE/2;art.y=23-182*ART_SCALE;sprite.addChild(art);
     }
 
-    public function update(dt:Float,ground:Float,reducedMotion:Bool):Void {phase+=dt;sprite.x+=dir*68*dt;if(sprite.x<minX||sprite.x>maxX)dir*=-1;sprite.y=ground-23+(reducedMotion?0:Math.sin(phase*3)*6);if(!reducedMotion)sprite.rotation=Math.sin(phase*2.2)*2.2;else sprite.rotation=0;}
+    public function update(dt:Float,ground:Float,reducedMotion:Bool):Void {phase+=dt;sprite.x+=dir*68*dt;if(sprite.x<minX||sprite.x>maxX)dir*=-1;sprite.y=ground-23;sprite.rotation=0;}
 }

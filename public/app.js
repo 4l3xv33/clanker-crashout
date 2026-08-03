@@ -29,7 +29,7 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=world-art-1",
+    url: "./game.swf?v=platform-glow-1",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
