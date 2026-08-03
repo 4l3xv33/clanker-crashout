@@ -100,7 +100,7 @@ class Main extends Sprite {
 
     function showTitle():Void {
         state="TITLE";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"PLAY");actionButton.visible=false;touch.visible=false;touch.reset();hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
-        screenText.htmlText='<font size="43" color="#72F1B8">ERROR 9 TO 5</font>\n<font size="17" color="#B9CAE7">A DATA-SCIENCE RESCUE MISSION</font>\n\n<font size="21" color="#FFFFFF">The robots are helpful.\nThe objective is not.</font>\n\n<font size="18" color="#D8E3F5">Investigate five corrupted departments, repair their decisions, and restore the humans.</font>\n\n<font size="14" color="#A8B8D4">WASD / Arrows  ·  Space jump  ·  E inspect  ·  Esc settings</font>';
+        screenText.htmlText='<font size="40" color="#72F1B8">ROGUE INFERENCE</font>\n<font size="18" color="#FFFFFF"><i>Correct the model. Rescue the humans.</i></font>\n\n<font size="20" color="#FFFFFF">The system is confident.\nThe system is wrong.</font>\n\n<font size="18" color="#D8E3F5">Investigate five corrupted departments, repair their decisions, and restore the humans.</font>\n\n<font size="14" color="#A8B8D4">WASD / Arrows  ·  Space jump  ·  E inspect  ·  Esc settings</font>';
     }
 
     function showFloorSelect():Void {

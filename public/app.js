@@ -25,11 +25,11 @@
   // Render the very first Ruffle frame in landscape on every touch device.
   // Native fullscreen/orientation lock takes over after the first legal gesture.
   document.documentElement.classList.toggle("orientation-fallback", touchMode);
-  player.setAttribute("aria-label", "ERROR 9 TO 5 Flash game");
+  player.setAttribute("aria-label", "ROGUE INFERENCE Flash game");
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=platform-glow-1",
+    url: "./game.swf?v=rogue-inference-1",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",

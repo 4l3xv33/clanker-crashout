@@ -1,4 +1,6 @@
-# ERROR 9 TO 5
+# ROGUE INFERENCE
+
+*Correct the model. Rescue the humans.*
 
 An original five-floor educational platformer about diagnosing broken workplace AI systems. The game is written in Haxe, compiled to a real SWF, and played in current browsers through a pinned Ruffle runtime.
 

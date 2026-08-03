@@ -1,8 +1,8 @@
 {
-  "name": "error-9-to-5",
+  "name": "rogue-inference",
   "version": "1.0.0",
   "private": true,
-  "description": "A Flash data-science rescue platformer running in Ruffle",
+  "description": "An AI rescue platformer running as a real SWF through Ruffle",
   "scripts": {
     "build:swf": "node scripts/build-swf.mjs",
     "prepare-site": "node scripts/prepare-site.mjs",
