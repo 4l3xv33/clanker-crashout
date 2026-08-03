@@ -5,6 +5,7 @@ const main = await readFile(new URL("../src/Main.hx", import.meta.url), "utf8");
 const productionBuild = await readFile(new URL("../build.hxml", import.meta.url), "utf8");
 const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
+const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
 const swf = await stat(new URL("../public/game.swf", import.meta.url));
 
 const floors = [...content.matchAll(/\bfloor\("/g)].length;
@@ -25,7 +26,8 @@ if (!app.includes("./game.swf")) failures.push("Website loader is missing ./game
 if (!main.includes("TitleArt")) failures.push("The generated key art is not embedded in the SWF");
 if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
-if (app.includes("orientation.lock") || app.includes("requestFullscreen")) failures.push("Startup must not change fullscreen or device orientation");
+if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");
+if (/transform\s*:\s*rotate/i.test(styles)) failures.push("CSS rotation would double-rotate the landscape game");
 if (main.includes("SPACE  CLOCK IN") || main.includes("PRESS SPACE TO ENTER")) failures.push("Game entry still depends on a Space prompt");
 
 if (failures.length) {
