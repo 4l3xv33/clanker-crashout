@@ -19,6 +19,7 @@ import flash.ui.Keyboard;
 import systems.SaveManager;
 import systems.SoundManager;
 import ui.Hud;
+import ui.EvidenceIcon;
 import ui.IncidentPanel;
 import ui.PausePanel;
 import ui.PromptBar;
@@ -121,7 +122,7 @@ class Main extends Sprite {
         robot=new Robot(floors[floorIndex].accent,floors[floorIndex].robot,floorIndex);robot.x=level.robotX;robot.y=LevelView.GROUND-44;actors.addChild(robot);
         coworker=new Coworker(floors[floorIndex].accent,floors[floorIndex].coworker,floors[floorIndex].role,floorIndex);coworker.x=level.robotX+112;coworker.y=LevelView.GROUND-29;actors.addChild(coworker);
         stairs=makeStairs(floors[floorIndex].accent);stairs.x=level.stairsX;stairs.y=LevelView.GROUND;actors.addChild(stairs);
-        var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var hazard=new Hazard(floors[floorIndex].accent,xs[i],xs[i]-75,xs[i]+75,i+floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
+        var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var minX=xs[i]-75,maxX=xs[i]+75;actors.addChildAt(makePatrolTrack(minX,maxX,floors[floorIndex].accent),0);var hazard=new Hazard(floors[floorIndex].accent,xs[i],minX,maxX,i+floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
         #if qa
         evidence=[true,true,true];for(terminal in terminals)terminal.alpha=.28;player.x=level.robotX-105;checkpointX=player.x;
         #end
@@ -211,6 +212,7 @@ class Main extends Sprite {
     function updateHud():Void hud.update(floorIndex,floors[floorIndex].department,evidenceCount(),integrity,resolved);
     function distance(x1:Float,y1:Float,x2:Float,y2:Float):Float {var dx=x1-x2,dy=y1-y2;return Math.sqrt(dx*dx+dy*dy);}
 
-    function makeTerminal(index:Int,accent:Int):Sprite {var s=new Sprite(),g=s.graphics;g.beginFill(0x111A2E);g.drawRoundRect(-27,-34,54,54,9);g.endFill();g.lineStyle(3,accent);g.drawRoundRect(-27,-34,54,54,9);g.beginFill(accent,.2);g.drawRoundRect(-17,-24,34,24,5);g.endFill();g.lineStyle(2,accent);g.moveTo(-10,-16);g.lineTo(10,-16);g.moveTo(-10,-9);g.lineTo(4,-9);var t=Theme.field(12,accent,true);t.text="E"+(index+1);t.x=-10;t.y=23;t.width=26;t.height=20;s.addChild(t);return s;}
+    function makeTerminal(index:Int,accent:Int):Sprite return new EvidenceIcon(index,accent);
+    function makePatrolTrack(minX:Float,maxX:Float,accent:Int):Sprite {var s=new Sprite();s.x=minX;s.y=LevelView.GROUND-5;var width=maxX-minX,g=s.graphics;g.lineStyle(7,0x07101D,.95);g.moveTo(0,0);g.lineTo(width,0);g.lineStyle(2,0x5CDAFF,.82);g.moveTo(0,0);g.lineTo(width,0);g.beginFill(0x5CDAFF,.9);g.drawRoundRect(-3,-10,6,13,3);g.drawRoundRect(width-3,-10,6,13,3);g.endFill();g.lineStyle(1,accent,.55);for(i in 1...5){var x=width*i/5;g.moveTo(x,-3);g.lineTo(x,3);}return s;}
     function makeStairs(accent:Int):Sprite {var s=new Sprite(),g=s.graphics;g.lineStyle(6,accent);for(i in 0...6){g.moveTo(i*24-72,-i*18);g.lineTo(i*24-48,-i*18);g.lineTo(i*24-48,-(i+1)*18);}var t=Theme.field(13,accent,true);t.text="STAIRWELL";t.x=-48;t.y=8;t.width=100;t.height=20;s.addChild(t);return s;}
 }
