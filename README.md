@@ -4,7 +4,7 @@
 
 An original five-floor educational platformer about diagnosing broken workplace AI systems. The game is written in Haxe, compiled to a real SWF, and played in current browsers through a pinned Ruffle runtime.
 
-**Play the hosted game:** [https://4l3xv33.github.io/error-9-to-5/](https://4l3xv33.github.io/error-9-to-5/)
+**Play the hosted game:** [https://4l3xv33.github.io/rogue-inference/](https://4l3xv33.github.io/rogue-inference/)
 
 ## Player controls
 
@@ -78,7 +78,7 @@ Run `npm.cmd run validate` after content edits. Professional legal, HR, privacy,
 ## Production safeguards
 
 - The production build contains no QA keyboard shortcuts.
-- Relative URLs support GitHub project Pages under `/error-9-to-5/`.
+- Relative URLs support GitHub project Pages under `/rogue-inference/`.
 - Ruffle is pinned through `package-lock.json` and copied during deployment.
 - GitHub Actions deploys only from `main`.
 - Development work should remain on a branch until browser QA passes.
