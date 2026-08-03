@@ -65,6 +65,8 @@ class Main extends Sprite {
     var evidence:Array<Bool>=[false,false,false];
     var integrity=3;
     var questionIndex=0;
+    var inspectingIndex=-1;
+    var lastEvidenceCorrect=false;
     var lastCorrect=false;
     var resolved=false;
     var cameraX=0.0;
@@ -93,7 +95,7 @@ class Main extends Sprite {
         var shade=new Sprite();shade.graphics.beginFill(0x050810,.22);shade.graphics.drawRect(0,0,W,H);shade.graphics.endFill();shade.graphics.beginFill(0x050810,.84);shade.graphics.drawRect(0,0,525,H);shade.graphics.endFill();screen.addChild(shade);
         screenText=Theme.field(20,Theme.TEXT,false);screenText.x=48;screenText.y=46;screenText.width=455;screenText.height=350;screen.addChild(screenText);
         playButton=makeButton("PLAY",48,415,190,58,Theme.MINT);screen.addChild(playButton);playButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="TITLE")beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(state=="ENDING")showTitle();});
-        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();else if(state=="NOTES")hideNotes();else if(state=="PAUSE")togglePause();});actionButton.visible=false;
+        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();else if(state=="EVIDENCE_FEEDBACK")continueEvidenceFeedback();else if(state=="NOTES")hideNotes();else if(state=="PAUSE")togglePause();});actionButton.visible=false;
     }
 
     function makeButton(label:String,x:Float,y:Float,w:Float,h:Float,color:Int):Sprite {var button=new Sprite();button.x=x;button.y=y;button.buttonMode=true;button.mouseChildren=false;button.graphics.beginFill(color);button.graphics.drawRoundRect(0,0,w,h,12);button.graphics.endFill();button.graphics.lineStyle(2,0xFFFFFF,.18);button.graphics.drawRoundRect(1,1,w-2,h-2,12);var text=Theme.field(19,0x07110D,true);text.name="label";text.x=0;text.y=16;text.width=w;text.height=28;text.autoSize=flash.text.TextFieldAutoSize.NONE;var format=new flash.text.TextFormat("_sans",19,0x07110D,true,null,null,null,null,flash.text.TextFormatAlign.CENTER);text.defaultTextFormat=format;text.text=label;text.setTextFormat(format);button.addChild(text);return button;}
@@ -116,13 +118,13 @@ class Main extends Sprite {
 
     function buildFloor():Void {
         while(world.numChildren>0)world.removeChildAt(0);level=new LevelView(floors[floorIndex],floorIndex);world.addChild(level);actors=new Sprite();world.addChild(actors);
-        evidence=[false,false,false];integrity=3;questionIndex=0;resolved=false;cameraX=0;checkpointX=70;levelTime=0;terminals=[];hazards=[];
+        evidence=[false,false,false];integrity=3;questionIndex=0;inspectingIndex=-1;resolved=false;cameraX=0;checkpointX=70;levelTime=0;terminals=[];hazards=[];
         player.x=70;player.y=LevelView.GROUND-40;player.vx=0;player.vy=0;actors.addChild(player);
         for(i in 0...3){var terminal=makeTerminal(i,floors[floorIndex].accent);var p=level.evidencePositions[i];terminal.x=p.x;terminal.y=p.y;actors.addChild(terminal);terminals.push(terminal);}
         robot=new Robot(floors[floorIndex].accent,floors[floorIndex].robot,floorIndex);robot.x=level.robotX;robot.y=LevelView.GROUND-44;actors.addChild(robot);
         coworker=new Coworker(floors[floorIndex].accent,floors[floorIndex].coworker,floors[floorIndex].role,floorIndex);coworker.x=level.robotX+112;coworker.y=LevelView.GROUND-29;actors.addChild(coworker);
         stairs=makeStairs(floors[floorIndex].accent);stairs.x=level.stairsX;stairs.y=LevelView.GROUND;actors.addChild(stairs);
-        var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var minX=xs[i]-75,maxX=xs[i]+75;actors.addChildAt(makePatrolTrack(minX,maxX,floors[floorIndex].accent),0);var hazard=new Hazard(floors[floorIndex].accent,xs[i],minX,maxX,i+floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
+        var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var minX=xs[i]-75,maxX=xs[i]+75;actors.addChildAt(makePatrolTrack(minX,maxX,floors[floorIndex].accent),0);var hazard=new Hazard(floors[floorIndex].accent,xs[i],minX,maxX,i+floorIndex,floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
         #if qa
         evidence=[true,true,true];for(terminal in terminals)terminal.alpha=.28;player.x=level.robotX-105;checkpointX=player.x;
         #end
@@ -141,9 +143,9 @@ class Main extends Sprite {
         if(player.jumpBuffer>0&&player.coyote>0){player.vy=-470;player.jumpBuffer=0;player.coyote=0;player.grounded=false;audio.play("jump");}
         var oldY=player.y;player.vy+=1120*dt;player.x+=player.vx*dt;player.y+=player.vy*dt;if(player.x<18){player.x=18;player.vx=0;}if(player.x>LevelView.WIDTH-18){player.x=LevelView.WIDTH-18;player.vx=0;}
         collide(oldY);if(player.y>H+100)respawn("A broken workflow dropped you from the process.");
-        for(h in hazards){h.update(dt,LevelView.GROUND,save.settings.reducedMotion);if(invincible<=0&&distance(player.x,player.y,h.sprite.x,h.sprite.y)<31)damage("A corrupted automation process interrupted you.");}
+        for(h in hazards){h.update(dt,LevelView.GROUND,save.settings.reducedMotion);if(!h.disabled&&invincible<=0&&distance(player.x,player.y,h.sprite.x,h.sprite.y)<31)damage(h.failureName+" interrupted your investigation.");}
         player.animate(dt,Math.abs(player.vx)>20,false,save.settings.reducedMotion);player.alpha=(invincible>0&&Std.int(invincible*12)%2==0) ? .3 : 1;robot.update(dt,save.settings.reducedMotion);
-        var target=Math.max(0,Math.min(LevelView.WIDTH-W,player.x-W*.42));cameraX+=save.settings.reducedMotion?(target-cameraX):(target-cameraX)*Math.min(1,dt*6);world.x=-cameraX;context();
+        var target=Math.max(0,Math.min(LevelView.WIDTH-W,player.x-W*.42));cameraX+=save.settings.reducedMotion?(target-cameraX):(target-cameraX)*Math.min(1,dt*6);world.x=-cameraX;context();updateTarget();
     }
 
     function collide(oldY:Float):Void {
@@ -153,29 +155,33 @@ class Main extends Sprite {
 
     function context():Void {
         player.pulseScanner(false);
-        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){prompt.hint("[E] Inspect evidence  "+(i+1)+" / 3");player.pulseScanner(true);return;}
-        if(distance(player.x,player.y,robot.x,robot.y)<125){prompt.hint(allEvidence()?"[E] Confront "+floors[floorIndex].robot:"ACCESS DENIED · Find all three evidence records");return;}
+        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){prompt.hint("[E] "+floors[floorIndex].mechanic+" · "+floors[floorIndex].evidence[i].title);player.pulseScanner(true);return;}
+        for(h in hazards)if(!h.disabled&&distance(player.x,player.y,h.sprite.x,h.sprite.y)<115){prompt.hint(h.failureName+" · Follow its fixed track and time your crossing");return;}
+        if(distance(player.x,player.y,robot.x,robot.y)<125){prompt.hint(allEvidence()?(questionIndex==0?"[E] Confront "+floors[floorIndex].robot:"[E] Apply control "+(questionIndex+1)+" / 3"):"ACCESS DENIED · Find all three evidence records");return;}
         if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120){prompt.hint(resolved?"[E] Take the stairs":"STAIRWELL LOCKED · Restore this floor");return;}
         player.pulseScanner(false);
     }
 
     function interact():Void {
-        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){player.playAction("interact");collectEvidence(i);return;}
-        if(distance(player.x,player.y,robot.x,robot.y)<125&&allEvidence()){player.playAction("interact");questionIndex=0;showQuestion();return;}
+        for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){player.playAction("interact");inspectEvidence(i);return;}
+        if(distance(player.x,player.y,robot.x,robot.y)<125&&allEvidence()){player.playAction("interact");showQuestion();return;}
         if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120&&resolved){player.playAction("interact");if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();}
     }
 
-    function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");prompt.toast("EVIDENCE "+(index+1)+": "+floors[floorIndex].evidence[index],5.4);updateHud();}
+    function inspectEvidence(index:Int):Void {inspectingIndex=index;state="EVIDENCE";touch.visible=false;touch.reset();actionButton.visible=false;incident.evidence(floors[floorIndex],floors[floorIndex].evidence[index],index);}
+    function answerEvidence(choice:Int):Void {if(state!="EVIDENCE")return;var item=floors[floorIndex].evidence[inspectingIndex];lastEvidenceCorrect=choice==item.correct;if(lastEvidenceCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="EVIDENCE_FEEDBACK";incident.evidenceFeedback(item,lastEvidenceCorrect,integrity);buttonLabel(actionButton,lastEvidenceCorrect?"LOG EVIDENCE":"RETRY ANALYSIS");actionButton.visible=true;updateHud();}
+    function continueEvidenceFeedback():Void {if(lastEvidenceCorrect)collectEvidence(inspectingIndex);else inspectEvidence(inspectingIndex);}
+    function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;if(index<hazards.length)hazards[index].disable();checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");incident.hide();actionButton.visible=false;state="PLAY";touch.visible=touchEnabled;prompt.toast("CASE NOTE "+(index+1)+": "+floors[floorIndex].evidence[index].summary+"  Related process isolated.",5.4);updateHud();}
     function showQuestion():Void {state="QUIZ";touch.visible=false;touch.reset();actionButton.visible=false;incident.question(floors[floorIndex],questionIndex);}
     function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);buttonLabel(actionButton,lastCorrect?"CONTINUE":"TRY AGAIN");actionButton.visible=true;updateHud();}
-    function continueFeedback():Void {if(lastCorrect)questionIndex++;if(questionIndex>=3)restoreFloor();else showQuestion();}
+    function continueFeedback():Void {if(!lastCorrect){showQuestion();return;}questionIndex++;robot.applyPatch(questionIndex);if(questionIndex>=3)restoreFloor();else{state="PLAY";incident.hide();actionButton.visible=false;touch.visible=touchEnabled;prompt.toast("CONTROL "+questionIndex+" / 3 APPLIED · Corruption weakened. Re-engage "+floors[floorIndex].robot+".",4.2);updateHud();}}
 
     function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();touch.visible=touchEnabled;robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
 
     function damage(message:String):Void {integrity--;invincible=1.4;player.playAction("damage");player.vx=-player.facing*210;player.vy=-260;audio.play("damage");if(integrity<=0){integrity=3;respawn("Coaching checkpoint restored your integrity.");}else prompt.toast(message+"  Integrity -1",3.4);updateHud();}
     function respawn(message:String):Void {player.x=checkpointX;player.y=250;player.vx=0;player.vy=0;invincible=1.5;prompt.toast(message,3.5);}
 
-    function showNotes():Void {previousState=state;state="NOTES";touch.visible=false;touch.reset();screen.visible=true;if(touchEnabled){buttonLabel(actionButton,"CLOSE NOTES");actionButton.visible=true;}var body="";for(i in 0...3)body+='<font color="'+(evidence[i]?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+(evidence[i]?floors[floorIndex].evidence[i]:'Evidence not yet collected')+'</font>\n\n';screenText.htmlText='<font size="30" color="#FFFFFF">FIELD NOTES · '+floors[floorIndex].department.toUpperCase()+'</font>\n<font size="14" color="#8FA1C6">Use these observations during the incident review.</font>\n\n<font size="17">'+body+'</font><font size="14" color="#FFCB6B">'+(touchEnabled?'Use Close Notes to return':'Press G or Esc to close')+'</font>';}
+    function showNotes():Void {previousState=state;state="NOTES";touch.visible=false;touch.reset();screen.visible=true;if(touchEnabled){buttonLabel(actionButton,"CLOSE NOTES");actionButton.visible=true;}var body="";for(i in 0...3)body+='<font color="'+(evidence[i]?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+(evidence[i]?floors[floorIndex].evidence[i].summary:'Evidence not yet verified')+'</font>\n\n';screenText.htmlText='<font size="30" color="#FFFFFF">CASE FILE · '+floors[floorIndex].department.toUpperCase()+'</font>\n<font size="14" color="#8FA1C6">'+floors[floorIndex].mechanicBrief+'</font>\n\n<font size="17">'+body+'</font><font size="14" color="#FFCB6B">'+(touchEnabled?'Use Close Notes to return':'Press G or Esc to close')+'</font>';}
     function hideNotes():Void {screen.visible=false;actionButton.visible=false;state=previousState;touch.visible=touchEnabled&&state=="PLAY";}
 
     function togglePause():Void {if(state=="PAUSE"){state="PLAY";pausePanel.hide();actionButton.visible=false;touch.visible=touchEnabled;}else if(state=="PLAY"){state="PAUSE";touch.visible=false;touch.reset();pausePanel.show(save.settings);if(touchEnabled){buttonLabel(actionButton,"RESUME");actionButton.visible=true;}}}
@@ -193,7 +199,8 @@ class Main extends Sprite {
         if(state=="SELECT"){var selected=Std.int(e.keyCode)-49;if(e.keyCode==Keyboard.ESCAPE)showTitle();else if(e.keyCode>=49&&e.keyCode<=53&&selected<=save.highestFloor)beginFloor(selected);return;}
         if(state=="BRIEFING")return;
         if(state=="QUIZ"&&e.keyCode>=49&&e.keyCode<=51){answer(Std.int(e.keyCode)-48);return;}
-        if(state=="FEEDBACK"||state=="ENDING")return;
+        if(state=="EVIDENCE"&&e.keyCode>=49&&e.keyCode<=51){answerEvidence(Std.int(e.keyCode)-48);return;}
+        if(state=="FEEDBACK"||state=="EVIDENCE_FEEDBACK"||state=="ENDING")return;
         if(state=="NOTES"&&(e.keyCode==71||e.keyCode==Keyboard.ESCAPE)){hideNotes();return;}
         if(state=="PAUSE"){switch e.keyCode{case Keyboard.ESCAPE:togglePause();case 77:save.settings.sound=!save.settings.sound;updatePause();case 82:save.settings.reducedMotion=!save.settings.reducedMotion;updatePause();case 72:save.settings.highContrast=!save.settings.highContrast;updatePause();case 84:save.settings.largeText=!save.settings.largeText;updatePause();}return;}
         if(state!="PLAY")return;
@@ -205,11 +212,12 @@ class Main extends Sprite {
     function touchUse():Void {if(state=="PLAY")interact();}
     function touchNotes():Void {if(state=="PLAY")showNotes();else if(state=="NOTES")hideNotes();}
     function touchPause():Void {if(state=="PLAY"||state=="PAUSE")togglePause();}
-    function onClick(e:MouseEvent):Void {if(state=="QUIZ"&&e.stageY>=180&&e.stageY<430){var choice=Std.int((e.stageY-180)/82)+1;if(choice>=1&&choice<=3)answer(choice);}}
+    function onClick(e:MouseEvent):Void {if(state=="QUIZ"&&e.stageY>=180&&e.stageY<430){var choice=Std.int((e.stageY-180)/82)+1;if(choice>=1&&choice<=3)answer(choice);}else if(state=="EVIDENCE"&&e.stageY>=288&&e.stageY<384){var evidenceChoice=Std.int((e.stageY-288)/32)+1;if(evidenceChoice>=1&&evidenceChoice<=3)answerEvidence(evidenceChoice);}}
     function down(code:Int):Bool return keys.exists(code)&&keys.get(code);
     function allEvidence():Bool return evidence[0]&&evidence[1]&&evidence[2];
     function evidenceCount():Int {var n=0;for(v in evidence)if(v)n++;return n;}
-    function updateHud():Void hud.update(floorIndex,floors[floorIndex].department,evidenceCount(),integrity,resolved);
+    function updateHud():Void hud.update(floorIndex,floors[floorIndex].department,floors[floorIndex].mechanic,evidenceCount(),integrity,resolved);
+    function updateTarget():Void {var targetX=0.0,label="";if(resolved){targetX=stairs.x;label="STAIRS";}else if(!allEvidence()){var best=1e9;for(i in 0...3)if(!evidence[i]){var d=Math.abs(terminals[i].x-player.x);if(d<best){best=d;targetX=terminals[i].x;label="E"+(i+1);}}}else{targetX=robot.x;label=questionIndex==0?"BOSS":"PATCH "+(questionIndex+1);}hud.setTarget(targetX-player.x,label);}
     function distance(x1:Float,y1:Float,x2:Float,y2:Float):Float {var dx=x1-x2,dy=y1-y2;return Math.sqrt(dx*dx+dy*dy);}
 
     function makeTerminal(index:Int,accent:Int):Sprite return new EvidenceIcon(index,accent);

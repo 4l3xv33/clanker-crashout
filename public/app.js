@@ -29,7 +29,7 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=evidence-tracks-1",
+    url: "./game.swf?v=investigation-loop-1",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
