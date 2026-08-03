@@ -18,27 +18,16 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=mobile-dpad-3",
+    url: "./game.swf?v=mobile-static-4",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
+    contextMenu: "off",
     parameters: { mobile: touchMode ? "1" : "0" }
   }).then(() => player.focus()).catch(() => {
     shell.textContent = "The game could not start. Refresh to try again.";
   });
 
-  async function enterLandscape() {
-    player.focus();
-    if (!touchMode) return;
-    try {
-      if (!document.fullscreenElement && player.requestFullscreen) await player.requestFullscreen();
-    } catch {}
-    try {
-      if (screen.orientation?.lock) await screen.orientation.lock("landscape");
-    } catch {}
-  }
-
-  player.addEventListener("pointerdown", enterLandscape, { once: true });
   player.addEventListener("pointerdown", () => player.focus());
   player.addEventListener("contextmenu", suppressHold, { capture: true });
 })();

@@ -19,7 +19,7 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | Esc | Pause and settings |
 | F | Fullscreen |
 
-Settings include sound, reduced motion, high contrast, and larger text preferences. Touch devices always present the game as a full-screen landscape canvas, request native landscape locking after the first tap where supported, and suppress long-press browser menus. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
+Settings include sound, reduced motion, high contrast, and larger text preferences. Touch devices receive the mobile D-pad without requesting fullscreen or changing device orientation. Ruffle's menu, long-press browser menus, selection, and callouts are disabled. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
 
 ## Game structure
 
