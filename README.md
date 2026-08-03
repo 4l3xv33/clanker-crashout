@@ -13,27 +13,28 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | WASD / Arrow keys | Move and jump |
 | Mouse | Play, enter a floor, continue feedback, or choose an incident response |
 | Touch D-pad | Left/right movement, up to jump, center star to interact |
-| Touch utility buttons | Open notes and pause on phones and tablets |
+| Touch utility buttons | Open notes, AI Codex, fullscreen, and pause |
 | Space | Jump |
 | E | Inspect evidence, confront a robot, use stairs |
 | G | Open field notes |
+| C | Open the AI Codex |
 | 1–3 or mouse | Choose an incident response |
 | Esc | Pause and settings |
 | F | Fullscreen |
 
-Settings include sound, reduced motion, high contrast, and larger text preferences. The first touch is captured outside Ruffle to enter fullscreen and apply the browser's native landscape lock. CSS rotation is used only as a fallback when native locking is unavailable or rejected, so the two mechanisms never double-rotate the game. Ruffle's menu, long-press browser menus, selection, and callouts are disabled. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
+Settings include independent music/effects levels, reduced motion, low effects, high contrast, larger text, and larger touch controls. The game pauses when it loses focus. The first touch is captured outside Ruffle to enter fullscreen and apply the browser's native landscape lock; an in-game fullscreen recovery button is also available. CSS rotation is used only as a fallback when native locking is unavailable or rejected, so the two mechanisms never double-rotate the game. Ruffle's menu, long-press browser menus, selection, and callouts are disabled. Progress and preferences are stored locally through Flash shared storage where supported by Ruffle.
 
 ## Game structure
 
-Each floor follows the same learning loop:
+Each floor uses a different system mechanic inside the same investigation loop:
 
-1. Observe three contextual evidence records.
-2. Diagnose the failure.
-3. Choose an immediate response.
-4. Install a preventive control.
-5. Restore the robot and release the coworker.
+1. Traverse fixed hazard tracks and corruption gaps to reach three artifacts.
+2. Analyze each artifact using the department's evidence mode.
+3. Use the findings to unlock or neutralize the floor's system mechanic.
+4. Confront a themed robot boss and remove three corruption nodes.
+5. Rescue the coworker, earn a mastery grade, unlock a model card, and attempt the replay challenge.
 
-The five departments cover hallucination and grounding, historical bias and contestability, consent and deceptive marketing, provenance and impersonation, and system-level objectives and least privilege.
+Sales uses evidence-locked firewalls; HR applies biased-ranking slowdown fields; Marketing contains amplification boosts; Digital Media requires a provenance chain; and the Core uses permission gates. The curriculum covers hallucination and grounding, historical bias and contestability, consent and deceptive marketing, provenance and impersonation, and system-level objectives and least privilege. Floor Select stores best scores and times, while the AI Codex records recovered models and completed challenges.
 
 ## Build locally
 

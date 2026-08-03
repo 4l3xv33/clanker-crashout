@@ -36,10 +36,18 @@ class IncidentPanel extends Sprite {
         body.htmlText='<font size="23" color="'+(correct?'#72F1B8':'#FF6174')+'">'+(correct?'CONTROL RESTORED':'WHY THIS IS NOT SAFE')+'</font>\n\n'+q.explanation+'\n\n<font size="16" color="#FFCB6B">CONSEQUENCE</font>\n<font size="17">'+q.consequence+'</font>\n\n<font size="16" color="#72F1B8">PRINCIPLE: '+q.principle+'</font>';
     }
 
-    public function briefing(floor:FloorData):Void {
-        visible=true;heading.text="FLOOR BRIEFING    "+floor.department.toUpperCase();heading.textColor=floor.accent;
-        body.htmlText='<font size="28" color="#FFFFFF">'+floor.subtitle+'</font>\n\n<font size="20">'+floor.briefing+'</font>\n\n<font size="16" color="#72F1B8">'+floor.mechanic+'</font>\n<font size="16" color="#B9CAE7">'+floor.mechanicBrief+'</font>\n\n<font size="15" color="#8FA1C6">Analyze three artifacts before confronting '+floor.robot+'. Your findings become the evidence used in the incident review.</font>';
+    public function debrief(floor:FloorData,score:Int,grade:String,seconds:Int,challenge:Bool):Void {
+        visible=true;heading.textColor=Theme.MINT;heading.text="DEPARTMENT RESTORED    "+floor.department.toUpperCase();var minutes=Std.int(seconds/60),remainder=seconds%60,time=minutes+":"+(remainder<10?"0":"")+remainder;
+        body.htmlText='<font size="29" color="#72F1B8">'+floor.coworker+' RESCUED</font>\n<font size="17" color="#FFFFFF">“'+floor.rescueLine+'”</font>\n\n<font size="19" color="#8FE8FF">MASTERY '+score+'    GRADE '+grade+'    TIME '+time+'</font>\n\n<font size="17" color="#FFCB6B">MODEL CARD UNLOCKED: '+floor.robot+'</font>\n<font size="16" color="'+(challenge?'#72F1B8':'#8FA1C6')+'">REPLAY CHALLENGE: '+(challenge?'COMPLETE':'AVAILABLE FROM FLOOR SELECT')+'</font>\n\n<font size="15" color="#B9CAE7">The stairwell is open. Review the model card in the AI Codex or continue to the next incident.</font>';
     }
+
+    public function briefing(floor:FloorData,challenge:String,complete:Bool):Void {
+        visible=true;heading.text="FLOOR BRIEFING    "+floor.department.toUpperCase();heading.textColor=floor.accent;
+        body.htmlText='<font size="28" color="#FFFFFF">'+floor.subtitle+'</font>\n\n<font size="20">'+floor.briefing+'</font>\n\n<font size="16" color="#72F1B8">'+floor.mechanic+'</font>\n<font size="16" color="#B9CAE7">'+floor.mechanicBrief+'</font>\n\n<font size="14" color="'+(complete?'#72F1B8':'#FFCB6B')+'">REPLAY CHALLENGE'+(complete?' · COMPLETE':'')+': '+challenge+'</font>\n<font size="14" color="#8FA1C6">Analyze three artifacts before confronting '+floor.robot+'.</font>';
+    }
+
+    public function opening():Void {visible=true;heading.textColor=0x8FE8FF;heading.text="INCOMING · DIRECTOR CHEN · DATA GOVERNANCE";body.htmlText='<font size="29" color="#FFFFFF">The office is still running.\nThat is the problem.</font>\n\n<font size="19">Every department robot is maximizing output with no stopping condition. Employees are contained, generated decisions are feeding other systems, and CORE-R has locked the stairwell.</font>\n\n<font size="17" color="#72F1B8">Your scanner can compare records, expose unsafe assumptions, and isolate corrupted processes.</font>\n\n<font size="16" color="#FFCB6B">Do not destroy the robots. Correct the model. Rescue the humans.</font>';}
+    public function transition(from:FloorData,to:FloorData):Void {visible=true;heading.textColor=to.accent;heading.text="STAIRWELL LINK RESTORED";body.htmlText='<font size="29" color="#72F1B8">'+from.department.toUpperCase()+' SECURED</font>\n\n<font size="20">'+from.coworker+' reconnects the stairwell controls. Above you, '+to.robot+' is still executing:</font>\n\n<font size="22" color="#FFCB6B">'+to.briefing+'</font>\n\n<font size="16" color="#8FE8FF">NEXT ANALYSIS MODE: '+to.mechanic+'</font>\n<font size="16" color="#B9CAE7">'+to.mechanicBrief+'</font>';}
 
     public function hide():Void visible=false;
     public function setLargeText(enabled:Bool):Void {heading.defaultTextFormat=new flash.text.TextFormat("_sans",enabled?18:15,Theme.MINT,true);body.defaultTextFormat=new flash.text.TextFormat("_sans",enabled?23:20,Theme.TEXT,false);}

@@ -29,7 +29,7 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=investigation-loop-1",
+    url: "./game.swf?v=production-1",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
@@ -55,6 +55,12 @@
     } catch {}
     document.documentElement.classList.toggle("orientation-fallback", !locked);
   }
+
+  window.rogueFullscreen = lockLandscape;
+  window.rogueHaptic = kind => {
+    if (!touchMode || typeof navigator.vibrate !== "function") return;
+    navigator.vibrate(kind === "damage" ? [35, 25, 55] : kind === "repair" ? [20, 20, 20] : 24);
+  };
 
   document.addEventListener("pointerup", lockLandscape, { capture: true, once: true });
   player.addEventListener("pointerdown", () => player.focus());
