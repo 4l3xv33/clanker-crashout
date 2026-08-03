@@ -1,5 +1,9 @@
 (() => {
   const shell = document.querySelector("#player");
+  const suppressHold = event => event.preventDefault();
+  for (const type of ["contextmenu", "selectstart", "dragstart", "gesturestart"]) {
+    document.addEventListener(type, suppressHold, { capture: true, passive: false });
+  }
 
   if (!window.RufflePlayer) {
     shell.textContent = "The game player could not load. Refresh to try again.";
@@ -14,7 +18,7 @@
   shell.replaceChildren(player);
 
   player.ruffle().load({
-    url: "./game.swf?v=mobile-dpad-2",
+    url: "./game.swf?v=mobile-dpad-3",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
@@ -36,4 +40,5 @@
 
   player.addEventListener("pointerdown", enterLandscape, { once: true });
   player.addEventListener("pointerdown", () => player.focus());
+  player.addEventListener("contextmenu", suppressHold, { capture: true });
 })();

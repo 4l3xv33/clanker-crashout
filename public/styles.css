@@ -12,7 +12,11 @@ body,
 html,
 body {
   overflow: hidden;
+  overscroll-behavior: none;
   background: #080b14;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 body {
@@ -40,6 +44,18 @@ ruffle-player {
     width: 100vw;
     height: 100vh;
     height: 100dvh;
+  }
+}
+
+@media (orientation: portrait) {
+  html.touch ruffle-player {
+    position: fixed;
+    width: 100dvh;
+    height: 100vw;
+    max-width: none;
+    max-height: none;
+    transform: rotate(90deg);
+    transform-origin: center;
   }
 }
 

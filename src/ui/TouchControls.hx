@@ -13,7 +13,7 @@ class TouchControls extends Sprite {
         super();
         addDirectionButton("up",108,366,64,64,null,onJump);
         addDirectionButton("left",38,436,64,64,function(active) left=active,null);
-        addHandButton(108,436,64,64,onUse);
+        addStarButton(108,436,64,64,onUse);
         addDirectionButton("right",178,436,64,64,function(active) right=active,null);
         addTapButton("NOTES",22,82,82,40,onNotes);
         addTapButton("PAUSE",856,82,82,40,onPause);
@@ -32,8 +32,9 @@ class TouchControls extends Sprite {
         if(setter!=null)bindHold(button,setter);if(tap!=null)bindTap(button,tap);
     }
 
-    function addHandButton(x:Float,y:Float,w:Float,h:Float,action:Void->Void):Void {
-        var button=shell("",x,y,w,h),g=button.graphics;g.lineStyle(2,Theme.TEXT);g.beginFill(Theme.MINT,.22);g.drawRoundRect(23,28,25,22,8);g.drawRoundRect(22,14,7,24,5);g.drawRoundRect(30,10,7,26,5);g.drawRoundRect(38,13,7,23,5);g.drawRoundRect(46,18,7,20,5);g.endFill();bindTap(button,action);
+    function addStarButton(x:Float,y:Float,w:Float,h:Float,action:Void->Void):Void {
+        var button=shell("",x,y,w,h),g=button.graphics;g.lineStyle(2,Theme.TEXT);g.beginFill(Theme.MINT,.42);
+        for(i in 0...10){var radius=i%2==0?19.0:8.5,angle=-Math.PI/2+i*Math.PI/5,px=32+Math.cos(angle)*radius,py=32+Math.sin(angle)*radius;if(i==0)g.moveTo(px,py);else g.lineTo(px,py);}g.lineTo(32,13);g.endFill();bindTap(button,action);
     }
 
     function addHoldButton(label:String,x:Float,y:Float,w:Float,h:Float,setter:Bool->Void):Void {
