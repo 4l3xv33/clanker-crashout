@@ -1,9 +1,15 @@
 package world;
 
 import data.FloorData;
+import flash.display.Bitmap;
+import flash.display.BitmapData;
 import flash.display.Sprite;
 import flash.geom.Rectangle;
-import ui.Theme;
+import world.LevelArt.FloorFiveArt;
+import world.LevelArt.FloorFourArt;
+import world.LevelArt.FloorOneArt;
+import world.LevelArt.FloorThreeArt;
+import world.LevelArt.FloorTwoArt;
 
 class LevelView extends Sprite {
     public static inline var WIDTH=2400;
@@ -16,33 +22,23 @@ class LevelView extends Sprite {
     public function new(data:FloorData,index:Int) {super();draw(data,index);}
 
     function draw(data:FloorData,index:Int):Void {
-        var g=graphics;g.beginFill(0x080D18);g.drawRect(0,0,WIDTH,540);g.endFill();
-        g.beginFill(data.wall);g.drawRect(0,56,WIDTH,396);g.endFill();
-        drawWindows(g,data,index);drawDepartment(g,data,index);drawFloor(g,data,index);
-        platforms=layout(index);for(p in platforms)if(p.y<GROUND){g.beginFill(0x263550);g.drawRoundRect(p.x,p.y,p.width,p.height,8);g.endFill();g.beginFill(data.accent,.85);g.drawRect(p.x+4,p.y,p.width-8,3);g.endFill();}
+        var g=graphics;g.beginFill(0x060A12);g.drawRect(0,0,WIDTH,540);g.endFill();
+        var background=new Bitmap(backgroundFor(index));background.x=0;background.y=56;background.smoothing=true;background.alpha=.9;addChild(background);
+        var veil=new Sprite();var vg=veil.graphics;vg.beginFill(0x06101A,.14);vg.drawRect(0,56,WIDTH,396);vg.endFill();addChild(veil);
+        var foreground=new Sprite();addChild(foreground);drawFloor(foreground,data);
+        platforms=layout(index);for(p in platforms)if(p.y<GROUND)drawPlatform(foreground,p,data);
         evidencePositions=positions(index);
     }
 
-    function drawWindows(g:flash.display.Graphics,data:FloorData,index:Int):Void {
-        for(i in 0...12){var x=70+i*200;g.beginFill(0x08111F);g.drawRoundRect(x,100,142,92,8);g.endFill();g.lineStyle(2,data.accent,.25);g.drawRoundRect(x,100,142,92,8);g.lineStyle(1,data.secondary,.16);g.moveTo(x+20,130);g.lineTo(x+122,130);g.moveTo(x+20,151);g.lineTo(x+100,151);}
-        g.lineStyle(1,data.accent,.12);for(x in 0...25){g.moveTo(x*100,56);g.lineTo(x*100,GROUND);}
+    function backgroundFor(index:Int):BitmapData return switch index {case 0:new FloorOneArt(0,0);case 1:new FloorTwoArt(0,0);case 2:new FloorThreeArt(0,0);case 3:new FloorFourArt(0,0);default:new FloorFiveArt(0,0);}
+
+    function drawFloor(layer:Sprite,data:FloorData):Void {
+        var g=layer.graphics;g.beginFill(0x09101C,.96);g.drawRect(0,GROUND,WIDTH,88);g.endFill();g.beginFill(data.accent,.92);g.drawRect(0,GROUND,WIDTH,4);g.endFill();g.beginFill(0xDCE6F2,.25);g.drawRect(0,GROUND+5,WIDTH,2);g.endFill();
+        for(i in 0...20){g.beginFill(data.secondary,.09);g.drawRect(i*130+45,GROUND+31,70,3);g.endFill();}
     }
 
-    function drawFloor(g:flash.display.Graphics,data:FloorData,index:Int):Void {g.beginFill(0x111A2E);g.drawRect(0,GROUND,WIDTH,88);g.endFill();g.beginFill(data.accent,.75);g.drawRect(0,GROUND,WIDTH,4);g.endFill();for(i in 0...20){g.beginFill(data.secondary,.06);g.drawRect(i*130+45,GROUND+28,70,3);g.endFill();}}
-
-    function drawDepartment(g:flash.display.Graphics,data:FloorData,index:Int):Void {
-        switch index {
-            case 0: // sales desks and call booths
-                for(i in 0...6){var x=210+i*360;g.beginFill(0x17243A);g.drawRect(x,375,190,14);g.drawRect(x+18,389,12,63);g.drawRect(x+160,389,12,63);g.endFill();g.beginFill(data.accent,.25);g.drawRect(x+62,316,80,50);g.endFill();g.lineStyle(2,data.accent,.55);g.drawRect(x+62,316,80,50);}
-            case 1: // files and interview rooms
-                for(i in 0...7){var x=130+i*320;g.beginFill(0x181325);g.drawRect(x,245,120,207);g.endFill();g.lineStyle(2,data.accent,.35);g.drawRect(x,245,120,207);for(r in 0...5){g.moveTo(x+10,275+r*33);g.lineTo(x+110,275+r*33);}}
-            case 2: // campaign billboards
-                for(i in 0...5){var x=160+i*430;g.beginFill(0x1E1A12);g.drawRoundRect(x,226,260,132,10);g.endFill();g.lineStyle(3,data.accent,.45);g.drawRoundRect(x,226,260,132,10);g.beginFill(data.secondary,.25);g.drawCircle(x+58,292,31);g.endFill();g.beginFill(data.accent,.25);g.drawRect(x+110,262,115,10);g.drawRect(x+110,286,82,8);g.endFill();}
-            case 3: // editing bays and light rigs
-                for(i in 0...6){var x=115+i*360;g.beginFill(0x0D1C22);g.drawRect(x,282,230,106);g.endFill();g.lineStyle(2,data.accent,.38);g.drawRect(x,282,230,106);g.moveTo(x+115,282);g.lineTo(x+115,388);g.beginFill(data.secondary,.25);g.drawCircle(x+58,335,27);g.drawCircle(x+173,335,27);g.endFill();}
-            case 4: // server core
-                for(i in 0...10){var x=80+i*235;g.beginFill(0x11101A);g.drawRoundRect(x,205,146,247,8);g.endFill();g.lineStyle(2,data.accent,.33);g.drawRoundRect(x,205,146,247,8);for(r in 0...7){g.beginFill(r%2==0?data.accent:data.secondary,.45);g.drawRect(x+18,232+r*27,12,5);g.endFill();g.lineStyle(1,0x334055);g.moveTo(x+44,234+r*27);g.lineTo(x+128,234+r*27);}}
-        }
+    function drawPlatform(layer:Sprite,p:Rectangle,data:FloorData):Void {
+        var g=layer.graphics;g.beginFill(0x0B1423,.98);g.drawRoundRect(p.x,p.y,p.width,p.height,6);g.endFill();g.lineStyle(1,0xDCE6F2,.45);g.drawRoundRect(p.x,p.y,p.width,p.height,6);g.beginFill(data.accent,.98);g.drawRect(p.x+4,p.y,p.width-8,3);g.endFill();g.beginFill(data.secondary,.16);g.drawRect(p.x+12,p.y+7,p.width-24,5);g.endFill();
     }
 
     function layout(index:Int):Array<Rectangle> return switch index {

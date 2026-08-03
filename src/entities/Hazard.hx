@@ -1,8 +1,15 @@
 package entities;
 
+import entities.WorldArt.EnemySheet;
+import flash.display.Bitmap;
+import flash.display.BitmapData;
 import flash.display.Sprite;
+import flash.geom.Point;
+import flash.geom.Rectangle;
 
 class Hazard {
+    static inline var FRAME_SIZE:Int=192;
+    static inline var ART_SCALE:Float=.48;
     public var sprite:Sprite;
     public var minX:Float;
     public var maxX:Float;
@@ -10,8 +17,13 @@ class Hazard {
     public var phase:Float;
 
     public function new(accent:Int,x:Float,minX:Float,maxX:Float,kind:Int) {
-        this.minX=minX;this.maxX=maxX;phase=Math.random()*6.28;sprite=new Sprite();sprite.x=x;draw(accent,kind);
+        this.minX=minX;this.maxX=maxX;phase=Math.random()*6.28;sprite=new Sprite();sprite.x=x;draw(kind);
     }
-    function draw(accent:Int,kind:Int):Void {var g=sprite.graphics;if(kind%3==0){g.beginFill(0xFF4F75,.9);g.moveTo(0,-18);g.lineTo(20,13);g.lineTo(-20,13);g.endFill();g.lineStyle(2,accent);g.drawCircle(0,0,22);}else if(kind%3==1){g.beginFill(0x162238);g.drawRoundRect(-22,-16,44,32,8);g.endFill();g.lineStyle(3,0xFF4F75);g.drawRoundRect(-22,-16,44,32,8);g.moveTo(-10,-23);g.lineTo(0,-15);g.lineTo(10,-23);}else{g.lineStyle(5,0xFF4F75);g.moveTo(-21,-18);g.lineTo(21,18);g.moveTo(21,-18);g.lineTo(-21,18);g.lineStyle(2,accent);g.drawCircle(0,0,25);}}
-    public function update(dt:Float,ground:Float,reducedMotion:Bool):Void {phase+=dt;sprite.x+=dir*68*dt;if(sprite.x<minX||sprite.x>maxX)dir*=-1;sprite.y=ground-23+(reducedMotion?0:Math.sin(phase*3)*7);if(!reducedMotion)sprite.rotation+=dir*45*dt;}
+
+    function draw(kind:Int):Void {
+        var sheet=new EnemySheet(0,0);var frame=new BitmapData(FRAME_SIZE,FRAME_SIZE,true,0);frame.copyPixels(sheet,new Rectangle((kind%6)*FRAME_SIZE,0,FRAME_SIZE,FRAME_SIZE),new Point());sheet.dispose();
+        var art=new Bitmap(frame);art.smoothing=true;art.scaleX=art.scaleY=ART_SCALE;art.x=-FRAME_SIZE*ART_SCALE/2;art.y=23-182*ART_SCALE;sprite.addChild(art);
+    }
+
+    public function update(dt:Float,ground:Float,reducedMotion:Bool):Void {phase+=dt;sprite.x+=dir*68*dt;if(sprite.x<minX||sprite.x>maxX)dir*=-1;sprite.y=ground-23+(reducedMotion?0:Math.sin(phase*3)*6);if(!reducedMotion)sprite.rotation=Math.sin(phase*2.2)*2.2;else sprite.rotation=0;}
 }

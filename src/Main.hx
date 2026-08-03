@@ -118,7 +118,7 @@ class Main extends Sprite {
         evidence=[false,false,false];integrity=3;questionIndex=0;resolved=false;cameraX=0;checkpointX=70;levelTime=0;terminals=[];hazards=[];
         player.x=70;player.y=LevelView.GROUND-40;player.vx=0;player.vy=0;actors.addChild(player);
         for(i in 0...3){var terminal=makeTerminal(i,floors[floorIndex].accent);var p=level.evidencePositions[i];terminal.x=p.x;terminal.y=p.y;actors.addChild(terminal);terminals.push(terminal);}
-        robot=new Robot(floors[floorIndex].accent,floors[floorIndex].robot);robot.x=level.robotX;robot.y=LevelView.GROUND-44;actors.addChild(robot);
+        robot=new Robot(floors[floorIndex].accent,floors[floorIndex].robot,floorIndex);robot.x=level.robotX;robot.y=LevelView.GROUND-44;actors.addChild(robot);
         coworker=new Coworker(floors[floorIndex].accent,floors[floorIndex].coworker,floors[floorIndex].role,floorIndex);coworker.x=level.robotX+112;coworker.y=LevelView.GROUND-29;actors.addChild(coworker);
         stairs=makeStairs(floors[floorIndex].accent);stairs.x=level.stairsX;stairs.y=LevelView.GROUND;actors.addChild(stairs);
         var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var hazard=new Hazard(floors[floorIndex].accent,xs[i],xs[i]-75,xs[i]+75,i+floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
