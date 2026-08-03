@@ -2,6 +2,8 @@
 
 An original five-floor educational platformer about diagnosing broken workplace AI systems. The game is written in Haxe, compiled to a real SWF, and played in current browsers through a pinned Ruffle runtime.
 
+**Play the hosted game:** [https://4l3xv33.github.io/error-9-to-5/](https://4l3xv33.github.io/error-9-to-5/)
+
 ## Player controls
 
 | Input | Action |
