@@ -7,6 +7,7 @@ import entities.Hazard;
 import entities.Player;
 import entities.Robot;
 import flash.Lib;
+import flash.display.Bitmap;
 import flash.display.Sprite;
 import flash.display.StageDisplayState;
 import flash.events.Event;
@@ -22,6 +23,7 @@ import ui.IncidentPanel;
 import ui.PausePanel;
 import ui.PromptBar;
 import ui.Theme;
+import visual.TitleArt;
 import world.LevelView;
 
 class Main extends Sprite {
@@ -50,6 +52,9 @@ class Main extends Sprite {
     var pausePanel:PausePanel;
     var screen:Sprite;
     var screenText:flash.text.TextField;
+    var titleArt:Bitmap;
+    var playButton:Sprite;
+    var actionButton:Sprite;
 
     var state="TITLE";
     var previousState="PLAY";
@@ -77,20 +82,30 @@ class Main extends Sprite {
         applyAccessibility();showTitle();
     }
 
-    function makeScreen():Void {screen=new Sprite();screen.graphics.beginFill(Theme.BG,.98);screen.graphics.drawRect(0,0,W,H);screen.graphics.endFill();addChild(screen);screenText=Theme.field(20,Theme.TEXT,false);screenText.x=105;screenText.y=60;screenText.width=750;screenText.height=420;screen.addChild(screenText);}
+    function makeScreen():Void {
+        screen=new Sprite();screen.graphics.beginFill(Theme.BG);screen.graphics.drawRect(0,0,W,H);screen.graphics.endFill();addChild(screen);
+        titleArt=new Bitmap(new TitleArt(0,0));titleArt.width=W;titleArt.height=H;titleArt.smoothing=true;screen.addChild(titleArt);
+        var shade=new Sprite();shade.graphics.beginFill(0x050810,.22);shade.graphics.drawRect(0,0,W,H);shade.graphics.endFill();shade.graphics.beginFill(0x050810,.84);shade.graphics.drawRect(0,0,525,H);shade.graphics.endFill();screen.addChild(shade);
+        screenText=Theme.field(20,Theme.TEXT,false);screenText.x=48;screenText.y=46;screenText.width=455;screenText.height=350;screen.addChild(screenText);
+        playButton=makeButton("PLAY",48,415,190,58,Theme.MINT);screen.addChild(playButton);playButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="TITLE")beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(state=="ENDING")showTitle();});
+        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();});actionButton.visible=false;
+    }
+
+    function makeButton(label:String,x:Float,y:Float,w:Float,h:Float,color:Int):Sprite {var button=new Sprite();button.x=x;button.y=y;button.buttonMode=true;button.mouseChildren=false;button.graphics.beginFill(color);button.graphics.drawRoundRect(0,0,w,h,12);button.graphics.endFill();button.graphics.lineStyle(2,0xFFFFFF,.18);button.graphics.drawRoundRect(1,1,w-2,h-2,12);var text=Theme.field(19,0x07110D,true);text.name="label";text.x=0;text.y=16;text.width=w;text.height=28;text.autoSize=flash.text.TextFieldAutoSize.NONE;var format=new flash.text.TextFormat("_sans",19,0x07110D,true,null,null,null,null,flash.text.TextFormatAlign.CENTER);text.defaultTextFormat=format;text.text=label;text.setTextFormat(format);button.addChild(text);return button;}
+    function buttonLabel(button:Sprite,label:String):Void {var text=cast(button.getChildByName("label"),flash.text.TextField);text.text=label;}
 
     function showTitle():Void {
-        state="TITLE";screen.visible=true;hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
-        screenText.htmlText='<p align="center"><font size="43" color="#72F1B8">ERROR 9 TO 5</font>\n<font size="17" color="#8FA1C6">A DATA-SCIENCE RESCUE MISSION</font>\n\n<font size="21">The automation network received one bad instruction:</font>\n<font size="25" color="#FFCB6B">MAXIMIZE OUTPUT. NEVER HESITATE.</font>\n\n<font size="18">Investigate five departments. Repair the decisions. Restore the humans.</font>\n\n<font color="#72F1B8">SPACE  CLOCK IN</font>    <font color="#FFCB6B">L  FLOOR SELECT</font>\n\n<font size="14" color="#8FA1C6">WASD / Arrows · Space jump · E inspect · G field notes · Esc settings</font></p>';
+        state="TITLE";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"PLAY");actionButton.visible=false;hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
+        screenText.htmlText='<font size="43" color="#72F1B8">ERROR 9 TO 5</font>\n<font size="17" color="#B9CAE7">A DATA-SCIENCE RESCUE MISSION</font>\n\n<font size="21" color="#FFFFFF">The robots are helpful.\nThe objective is not.</font>\n\n<font size="18" color="#D8E3F5">Investigate five corrupted departments, repair their decisions, and restore the humans.</font>\n\n<font size="14" color="#A8B8D4">WASD / Arrows  ·  Space jump  ·  E inspect  ·  Esc settings</font>';
     }
 
     function showFloorSelect():Void {
-        state="SELECT";screen.visible=true;var list="";for(i in 0...floors.length){var unlocked=i<=save.highestFloor;list+='<font color="'+(unlocked?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+floors[i].department+(unlocked?'':'  [LOCKED]')+'</font>\n\n';}
+        state="SELECT";screen.visible=true;titleArt.visible=false;playButton.visible=false;actionButton.visible=false;var list="";for(i in 0...floors.length){var unlocked=i<=save.highestFloor;list+='<font color="'+(unlocked?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+floors[i].department+(unlocked?'':'  [LOCKED]')+'</font>\n\n';}
         screenText.htmlText='<font size="31" color="#FFFFFF">SELECT A FLOOR</font>\n<font size="15" color="#8FA1C6">Completed departments remain available for review.</font>\n\n<font size="20">'+list+'</font><font size="14" color="#8FA1C6">Press 1–5 · Esc returns to title</font>';
     }
 
     function beginFloor(index:Int):Void {
-        floorIndex=index;state="BRIEFING";screen.visible=false;hud.visible=true;pausePanel.hide();incident.briefing(floors[index]);
+        floorIndex=index;state="BRIEFING";screen.visible=false;playButton.visible=false;hud.visible=true;pausePanel.hide();incident.briefing(floors[index]);buttonLabel(actionButton,"ENTER FLOOR");actionButton.visible=true;
         buildFloor();
     }
 
@@ -109,7 +124,7 @@ class Main extends Sprite {
         updateHud();
     }
 
-    function startPlay():Void {state="PLAY";incident.hide();prompt.toast("Find the evidence. Press E near highlighted objects to inspect them.",3.5);}
+    function startPlay():Void {state="PLAY";incident.hide();actionButton.visible=false;prompt.toast("Find the evidence. Press E near highlighted objects to inspect them.",3.5);}
 
     function update(_:Event):Void {
         var now=Lib.getTimer();if(lastTime==0)lastTime=now;var dt=Math.min((now-lastTime)/1000,.04);lastTime=now;
@@ -145,8 +160,8 @@ class Main extends Sprite {
     }
 
     function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");prompt.toast("EVIDENCE "+(index+1)+": "+floors[floorIndex].evidence[index],5.4);updateHud();}
-    function showQuestion():Void {state="QUIZ";incident.question(floors[floorIndex],questionIndex);}
-    function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);updateHud();}
+    function showQuestion():Void {state="QUIZ";actionButton.visible=false;incident.question(floors[floorIndex],questionIndex);}
+    function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);buttonLabel(actionButton,lastCorrect?"CONTINUE":"TRY AGAIN");actionButton.visible=true;updateHud();}
     function continueFeedback():Void {if(lastCorrect)questionIndex++;if(questionIndex>=3)restoreFloor();else showQuestion();}
 
     function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
@@ -161,19 +176,18 @@ class Main extends Sprite {
     function updatePause():Void {audio.enabled=save.settings.sound;applyAccessibility();save.persist();pausePanel.show(save.settings);}
     function applyAccessibility():Void {world.transform.colorTransform=save.settings.highContrast?new ColorTransform(1.24,1.24,1.24,1,10,10,10,0):new ColorTransform();hud.setLargeText(save.settings.largeText);prompt.setLargeText(save.settings.largeText);incident.setLargeText(save.settings.largeText);pausePanel.setLargeText(save.settings.largeText);}
 
-    function showEnding():Void {state="ENDING";screen.visible=true;incident.hide();hud.visible=false;screenText.htmlText='<p align="center"><font size="38" color="#72F1B8">SYSTEM RESTORED</font>\n\n<font size="21">The robots were never evil. They followed a reckless objective with too much access and no permission to admit uncertainty.</font>\n\n<font size="26" color="#FFCB6B">HELP PEOPLE. SHOW YOUR EVIDENCE.\nSTOP WHEN YOU ARE UNSURE.</font>\n\n<font size="17" color="#8FA1C6">Five teams rescued · Fifteen controls restored</font>\n\n<font color="#72F1B8">SPACE  RETURN TO TITLE</font></p>';}
+    function showEnding():Void {state="ENDING";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"RETURN TO TITLE");actionButton.visible=false;incident.hide();hud.visible=false;screenText.htmlText='<font size="38" color="#72F1B8">SYSTEM RESTORED</font>\n\n<font size="21" color="#FFFFFF">The robots were never evil. They followed a reckless objective with too much access and no permission to admit uncertainty.</font>\n\n<font size="24" color="#FFCB6B">HELP PEOPLE. SHOW YOUR EVIDENCE.\nSTOP WHEN YOU ARE UNSURE.</font>\n\n<font size="17" color="#B9CAE7">Five teams rescued · Fifteen controls restored</font>';}
 
     function keyDown(e:KeyboardEvent):Void {
         keys.set(e.keyCode,true);
         #if qa
         if(state=="PLAY"&&e.keyCode==78){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();return;}
         #end
-        if(state=="TITLE"){if(e.keyCode==Keyboard.SPACE)beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(e.keyCode==76)showFloorSelect();return;}
+        if(state=="TITLE"){if(e.keyCode==76)showFloorSelect();return;}
         if(state=="SELECT"){var selected=Std.int(e.keyCode)-49;if(e.keyCode==Keyboard.ESCAPE)showTitle();else if(e.keyCode>=49&&e.keyCode<=53&&selected<=save.highestFloor)beginFloor(selected);return;}
-        if(state=="BRIEFING"&&e.keyCode==Keyboard.SPACE){startPlay();return;}
+        if(state=="BRIEFING")return;
         if(state=="QUIZ"&&e.keyCode>=49&&e.keyCode<=51){answer(Std.int(e.keyCode)-48);return;}
-        if(state=="FEEDBACK"&&e.keyCode==Keyboard.SPACE){continueFeedback();return;}
-        if(state=="ENDING"&&e.keyCode==Keyboard.SPACE){showTitle();return;}
+        if(state=="FEEDBACK"||state=="ENDING")return;
         if(state=="NOTES"&&(e.keyCode==71||e.keyCode==Keyboard.ESCAPE)){hideNotes();return;}
         if(state=="PAUSE"){switch e.keyCode{case Keyboard.ESCAPE:togglePause();case 77:save.settings.sound=!save.settings.sound;updatePause();case 82:save.settings.reducedMotion=!save.settings.reducedMotion;updatePause();case 72:save.settings.highContrast=!save.settings.highContrast;updatePause();case 84:save.settings.largeText=!save.settings.largeText;updatePause();}return;}
         if(state!="PLAY")return;

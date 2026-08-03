@@ -18,10 +18,12 @@ if (evidenceBlocks < 5) failures.push("Every floor must declare evidence");
 if (swf.size < 1000) failures.push(`SWF is unexpectedly small: ${swf.size} bytes`);
 if (main.includes("debug_qa")) failures.push("Production source contains legacy debug_qa");
 if (productionBuild.includes("-D qa")) failures.push("Production build enables QA mode");
-for (const required of ["./ruffle/ruffle.js", "./assets/hero.webp", "#concepts"]) {
+for (const required of ["./ruffle/ruffle.js", 'id="player"']) {
   if (!html.includes(required)) failures.push(`Website is missing ${required}`);
 }
 if (!app.includes("./game.swf")) failures.push("Website loader is missing ./game.swf");
+if (!main.includes("TitleArt")) failures.push("The generated key art is not embedded in the SWF");
+if (main.includes("SPACE  CLOCK IN") || main.includes("PRESS SPACE TO ENTER")) failures.push("Game entry still depends on a Space prompt");
 
 if (failures.length) {
   console.error(failures.map(value => `- ${value}`).join("\n"));

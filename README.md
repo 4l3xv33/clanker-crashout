@@ -7,7 +7,8 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | Input | Action |
 | --- | --- |
 | WASD / Arrow keys | Move and jump |
-| Space | Jump, start, or continue |
+| Mouse | Play, enter a floor, continue feedback, or choose an incident response |
+| Space | Jump |
 | E | Inspect evidence, confront a robot, use stairs |
 | G | Open field notes |
 | 1–3 or mouse | Choose an incident response |
@@ -54,7 +55,7 @@ src/
 └── world/                  Department layouts and environmental rendering
 ```
 
-Editable visual references live in `assets/concept`. Optimized website artwork lives in `public/assets`. Runtime characters and environments use code-native vector drawing for crisp, lightweight SWF animation.
+Editable visual references live in `assets/concept`. The title artwork in `assets/game` is embedded directly into the compiled SWF. Runtime characters and environments use code-native vector drawing for crisp, lightweight SWF animation. The GitHub Pages shell is intentionally game-only and fills the browser viewport without page scrolling.
 
 ## Editing educational content
 
