@@ -8,19 +8,15 @@ const productionBuild = await readFile(new URL("../build.hxml", import.meta.url)
 const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
 const styles = await readFile(new URL("../public/styles.css", import.meta.url), "utf8");
-const mechanics = await readFile(new URL("../src/world/DepartmentMechanic.hx", import.meta.url), "utf8");
-const saves = await readFile(new URL("../src/systems/SaveManager.hx", import.meta.url), "utf8");
 const swf = await stat(new URL("../public/game.swf", import.meta.url));
 
 const floors = [...content.matchAll(/\bfloor\("/g)].length;
 const questions = [...content.matchAll(/\bq\("/g)].length;
-const evidenceChallenges = [...content.matchAll(/\be\("/g)].length;
 const evidenceBlocks = [...content.matchAll(/,"[^\n]+",\[/g)].length;
 
 const failures = [];
 if (floors !== 5) failures.push(`Expected 5 floors, found ${floors}`);
 if (questions !== 15) failures.push(`Expected 15 questions, found ${questions}`);
-if (evidenceChallenges !== 15) failures.push(`Expected 15 interactive evidence challenges, found ${evidenceChallenges}`);
 if (evidenceBlocks < 5) failures.push("Every floor must declare evidence");
 if (swf.size < 1000) failures.push(`SWF is unexpectedly small: ${swf.size} bytes`);
 if (main.includes("debug_qa")) failures.push("Production source contains legacy debug_qa");
@@ -35,13 +31,6 @@ for (const animation of ["run", "jump", "interact", "scan", "damage"]) {
 }
 if (!player.includes('playAction(name:String)') || !main.includes('player.playAction("damage")')) failures.push("Player action animations are not connected to gameplay");
 if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
-if (!main.includes('state="EVIDENCE"') || !main.includes("answerEvidence") || !main.includes("continueEvidenceFeedback")) failures.push("Interactive evidence analysis is not connected end to end");
-for (const system of ['addGate(620,0,"SOURCE")', "BIASED RANKING", "AMPLIFICATION", "drawProvenanceChain", 'addGate(570,0,"TASK")']) {
-  if (!mechanics.includes(system)) failures.push(`Department mechanic missing: ${system}`);
-}
-if (!main.includes("showCodex") || !main.includes("challengeMet") || !saves.includes("recordFloor")) failures.push("Mastery, replay, and AI Codex progression are not connected");
-if (!main.includes("ParticleBurst") || !main.includes("updateCamera")) failures.push("Visual feedback and parallax are not connected");
-if (!app.includes("rogueHaptic") || !main.includes("touchFullscreen")) failures.push("Mobile haptics and fullscreen recovery are not connected");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");
 if (!app.includes('document.addEventListener("pointerup"') || !app.includes("canNativeLock")) failures.push("Landscape lock must capture the first user gesture outside Ruffle");
@@ -53,4 +42,4 @@ if (failures.length) {
   console.error(failures.map(value => `- ${value}`).join("\n"));
   process.exit(1);
 }
-console.log(`Validated ${floors} floors, ${evidenceChallenges} evidence challenges, ${questions} incident controls, ${swf.size} byte SWF, and GitHub Pages-safe assets.`);
+console.log(`Validated ${floors} floors, ${questions} incident controls, ${swf.size} byte SWF, and GitHub Pages-safe assets.`);

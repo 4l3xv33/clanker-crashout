@@ -9,15 +9,13 @@ class TouchControls extends Sprite {
     public var left=false;
     public var right=false;
 
-    public function new(onJump:Void->Void,onUse:Void->Void,onNotes:Void->Void,onCodex:Void->Void,onFullscreen:Void->Void,onPause:Void->Void) {
+    public function new(onJump:Void->Void,onUse:Void->Void,onNotes:Void->Void,onPause:Void->Void) {
         super();
         addDirectionButton("up",108,366,64,64,null,onJump);
         addDirectionButton("left",38,436,64,64,function(active) left=active,null);
         addStarButton(108,436,64,64,onUse);
         addDirectionButton("right",178,436,64,64,function(active) right=active,null);
         addTapButton("NOTES",22,82,82,40,onNotes);
-        addTapButton("CODEX",110,82,82,40,onCodex);
-        addTapButton("FULL",764,82,82,40,onFullscreen);
         addTapButton("PAUSE",856,82,82,40,onPause);
         visible=false;
     }
@@ -61,5 +59,4 @@ class TouchControls extends Sprite {
     }
 
     public function reset():Void {left=false;right=false;}
-    public function setLargeControls(enabled:Bool):Void {scaleX=scaleY=enabled?1.16:1;x=enabled?-18:0;y=enabled?-58:0;}
 }
