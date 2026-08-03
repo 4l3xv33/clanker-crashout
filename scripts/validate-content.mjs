@@ -23,6 +23,7 @@ for (const required of ["./ruffle/ruffle.js", 'id="player"']) {
 }
 if (!app.includes("./game.swf")) failures.push("Website loader is missing ./game.swf");
 if (!main.includes("TitleArt")) failures.push("The generated key art is not embedded in the SWF");
+if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
 if (main.includes("SPACE  CLOCK IN") || main.includes("PRESS SPACE TO ENTER")) failures.push("Game entry still depends on a Space prompt");
 
 if (failures.length) {

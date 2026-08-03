@@ -23,6 +23,7 @@ import ui.IncidentPanel;
 import ui.PausePanel;
 import ui.PromptBar;
 import ui.Theme;
+import ui.TouchControls;
 import visual.TitleArt;
 import world.LevelView;
 
@@ -55,6 +56,8 @@ class Main extends Sprite {
     var titleArt:Bitmap;
     var playButton:Sprite;
     var actionButton:Sprite;
+    var touch:TouchControls;
+    var touchEnabled=false;
 
     var state="TITLE";
     var previousState="PLAY";
@@ -78,6 +81,7 @@ class Main extends Sprite {
         world=new Sprite();actors=new Sprite();addChild(world);
         player=new Player();
         hud=new Hud();addChild(hud);prompt=new PromptBar();addChild(prompt);incident=new IncidentPanel();addChild(incident);pausePanel=new PausePanel();addChild(pausePanel);makeScreen();
+        touchEnabled=Reflect.field(loaderInfo.parameters,"mobile")=="1";touch=new TouchControls(touchJump,touchUse,touchNotes,touchPause);addChild(touch);
         stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown);stage.addEventListener(KeyboardEvent.KEY_UP,keyUp);stage.addEventListener(MouseEvent.CLICK,onClick);addEventListener(Event.ENTER_FRAME,update);
         applyAccessibility();showTitle();
     }
@@ -88,24 +92,24 @@ class Main extends Sprite {
         var shade=new Sprite();shade.graphics.beginFill(0x050810,.22);shade.graphics.drawRect(0,0,W,H);shade.graphics.endFill();shade.graphics.beginFill(0x050810,.84);shade.graphics.drawRect(0,0,525,H);shade.graphics.endFill();screen.addChild(shade);
         screenText=Theme.field(20,Theme.TEXT,false);screenText.x=48;screenText.y=46;screenText.width=455;screenText.height=350;screen.addChild(screenText);
         playButton=makeButton("PLAY",48,415,190,58,Theme.MINT);screen.addChild(playButton);playButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="TITLE")beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(state=="ENDING")showTitle();});
-        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();});actionButton.visible=false;
+        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();else if(state=="NOTES")hideNotes();else if(state=="PAUSE")togglePause();});actionButton.visible=false;
     }
 
     function makeButton(label:String,x:Float,y:Float,w:Float,h:Float,color:Int):Sprite {var button=new Sprite();button.x=x;button.y=y;button.buttonMode=true;button.mouseChildren=false;button.graphics.beginFill(color);button.graphics.drawRoundRect(0,0,w,h,12);button.graphics.endFill();button.graphics.lineStyle(2,0xFFFFFF,.18);button.graphics.drawRoundRect(1,1,w-2,h-2,12);var text=Theme.field(19,0x07110D,true);text.name="label";text.x=0;text.y=16;text.width=w;text.height=28;text.autoSize=flash.text.TextFieldAutoSize.NONE;var format=new flash.text.TextFormat("_sans",19,0x07110D,true,null,null,null,null,flash.text.TextFormatAlign.CENTER);text.defaultTextFormat=format;text.text=label;text.setTextFormat(format);button.addChild(text);return button;}
     function buttonLabel(button:Sprite,label:String):Void {var text=cast(button.getChildByName("label"),flash.text.TextField);text.text=label;}
 
     function showTitle():Void {
-        state="TITLE";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"PLAY");actionButton.visible=false;hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
+        state="TITLE";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"PLAY");actionButton.visible=false;touch.visible=false;touch.reset();hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
         screenText.htmlText='<font size="43" color="#72F1B8">ERROR 9 TO 5</font>\n<font size="17" color="#B9CAE7">A DATA-SCIENCE RESCUE MISSION</font>\n\n<font size="21" color="#FFFFFF">The robots are helpful.\nThe objective is not.</font>\n\n<font size="18" color="#D8E3F5">Investigate five corrupted departments, repair their decisions, and restore the humans.</font>\n\n<font size="14" color="#A8B8D4">WASD / Arrows  ·  Space jump  ·  E inspect  ·  Esc settings</font>';
     }
 
     function showFloorSelect():Void {
-        state="SELECT";screen.visible=true;titleArt.visible=false;playButton.visible=false;actionButton.visible=false;var list="";for(i in 0...floors.length){var unlocked=i<=save.highestFloor;list+='<font color="'+(unlocked?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+floors[i].department+(unlocked?'':'  [LOCKED]')+'</font>\n\n';}
+        state="SELECT";screen.visible=true;titleArt.visible=false;playButton.visible=false;actionButton.visible=false;touch.visible=false;var list="";for(i in 0...floors.length){var unlocked=i<=save.highestFloor;list+='<font color="'+(unlocked?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+floors[i].department+(unlocked?'':'  [LOCKED]')+'</font>\n\n';}
         screenText.htmlText='<font size="31" color="#FFFFFF">SELECT A FLOOR</font>\n<font size="15" color="#8FA1C6">Completed departments remain available for review.</font>\n\n<font size="20">'+list+'</font><font size="14" color="#8FA1C6">Press 1–5 · Esc returns to title</font>';
     }
 
     function beginFloor(index:Int):Void {
-        floorIndex=index;state="BRIEFING";screen.visible=false;playButton.visible=false;hud.visible=true;pausePanel.hide();incident.briefing(floors[index]);buttonLabel(actionButton,"ENTER FLOOR");actionButton.visible=true;
+        floorIndex=index;state="BRIEFING";screen.visible=false;playButton.visible=false;touch.visible=false;hud.visible=true;pausePanel.hide();incident.briefing(floors[index]);buttonLabel(actionButton,"ENTER FLOOR");actionButton.visible=true;
         buildFloor();
     }
 
@@ -124,12 +128,12 @@ class Main extends Sprite {
         updateHud();
     }
 
-    function startPlay():Void {state="PLAY";incident.hide();actionButton.visible=false;prompt.toast("Find the evidence. Press E near highlighted objects to inspect them.",3.5);}
+    function startPlay():Void {state="PLAY";incident.hide();actionButton.visible=false;touch.visible=touchEnabled;prompt.toast(touchEnabled?"Find the evidence. Use the on-screen controls to investigate.":"Find the evidence. Press E near highlighted objects to inspect them.",3.5);}
 
     function update(_:Event):Void {
         var now=Lib.getTimer();if(lastTime==0)lastTime=now;var dt=Math.min((now-lastTime)/1000,.04);lastTime=now;
         prompt.update(dt);if(state!="PLAY")return;levelTime+=dt;invincible-=dt;
-        var input=0.0;if(down(Keyboard.LEFT)||down(65))input-=1;if(down(Keyboard.RIGHT)||down(68))input+=1;
+        var input=0.0;if(down(Keyboard.LEFT)||down(65)||touch.left)input-=1;if(down(Keyboard.RIGHT)||down(68)||touch.right)input+=1;
         if(player.grounded)player.coyote=.1;else player.coyote-=dt;player.jumpBuffer-=dt;
         var acceleration=player.grounded ? 1250 : 760;player.vx+=input*acceleration*dt;var drag=player.grounded ? .035 : .32;player.vx*=Math.pow(drag,dt);if(player.vx>285)player.vx=285;if(player.vx< -285)player.vx=-285;
         if(input!=0)player.facing=input<0?-1:1;
@@ -160,19 +164,19 @@ class Main extends Sprite {
     }
 
     function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");prompt.toast("EVIDENCE "+(index+1)+": "+floors[floorIndex].evidence[index],5.4);updateHud();}
-    function showQuestion():Void {state="QUIZ";actionButton.visible=false;incident.question(floors[floorIndex],questionIndex);}
+    function showQuestion():Void {state="QUIZ";touch.visible=false;touch.reset();actionButton.visible=false;incident.question(floors[floorIndex],questionIndex);}
     function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);buttonLabel(actionButton,lastCorrect?"CONTINUE":"TRY AGAIN");actionButton.visible=true;updateHud();}
     function continueFeedback():Void {if(lastCorrect)questionIndex++;if(questionIndex>=3)restoreFloor();else showQuestion();}
 
-    function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
+    function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();touch.visible=touchEnabled;robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
 
     function damage(message:String):Void {integrity--;invincible=1.4;player.vx=-player.facing*210;player.vy=-260;audio.play("damage");if(integrity<=0){integrity=3;respawn("Coaching checkpoint restored your integrity.");}else prompt.toast(message+"  Integrity -1",3.4);updateHud();}
     function respawn(message:String):Void {player.x=checkpointX;player.y=250;player.vx=0;player.vy=0;invincible=1.5;prompt.toast(message,3.5);}
 
-    function showNotes():Void {previousState=state;state="NOTES";screen.visible=true;var body="";for(i in 0...3)body+='<font color="'+(evidence[i]?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+(evidence[i]?floors[floorIndex].evidence[i]:'Evidence not yet collected')+'</font>\n\n';screenText.htmlText='<font size="30" color="#FFFFFF">FIELD NOTES · '+floors[floorIndex].department.toUpperCase()+'</font>\n<font size="14" color="#8FA1C6">Use these observations during the incident review.</font>\n\n<font size="17">'+body+'</font><font size="14" color="#FFCB6B">Press G or Esc to close</font>';}
-    function hideNotes():Void {screen.visible=false;state=previousState;}
+    function showNotes():Void {previousState=state;state="NOTES";touch.visible=false;touch.reset();screen.visible=true;if(touchEnabled){buttonLabel(actionButton,"CLOSE NOTES");actionButton.visible=true;}var body="";for(i in 0...3)body+='<font color="'+(evidence[i]?'#72F1B8':'#52617D')+'">'+(i+1)+'  '+(evidence[i]?floors[floorIndex].evidence[i]:'Evidence not yet collected')+'</font>\n\n';screenText.htmlText='<font size="30" color="#FFFFFF">FIELD NOTES · '+floors[floorIndex].department.toUpperCase()+'</font>\n<font size="14" color="#8FA1C6">Use these observations during the incident review.</font>\n\n<font size="17">'+body+'</font><font size="14" color="#FFCB6B">'+(touchEnabled?'Use Close Notes to return':'Press G or Esc to close')+'</font>';}
+    function hideNotes():Void {screen.visible=false;actionButton.visible=false;state=previousState;touch.visible=touchEnabled&&state=="PLAY";}
 
-    function togglePause():Void {if(state=="PAUSE"){state="PLAY";pausePanel.hide();}else if(state=="PLAY"){state="PAUSE";pausePanel.show(save.settings);}}
+    function togglePause():Void {if(state=="PAUSE"){state="PLAY";pausePanel.hide();actionButton.visible=false;touch.visible=touchEnabled;}else if(state=="PLAY"){state="PAUSE";touch.visible=false;touch.reset();pausePanel.show(save.settings);if(touchEnabled){buttonLabel(actionButton,"RESUME");actionButton.visible=true;}}}
     function updatePause():Void {audio.enabled=save.settings.sound;applyAccessibility();save.persist();pausePanel.show(save.settings);}
     function applyAccessibility():Void {world.transform.colorTransform=save.settings.highContrast?new ColorTransform(1.24,1.24,1.24,1,10,10,10,0):new ColorTransform();hud.setLargeText(save.settings.largeText);prompt.setLargeText(save.settings.largeText);incident.setLargeText(save.settings.largeText);pausePanel.setLargeText(save.settings.largeText);}
 
@@ -195,6 +199,10 @@ class Main extends Sprite {
         if(e.keyCode==Keyboard.SPACE||e.keyCode==Keyboard.UP||e.keyCode==87)player.jumpBuffer=.12;
     }
     function keyUp(e:KeyboardEvent):Void {keys.set(e.keyCode,false);if((e.keyCode==Keyboard.SPACE||e.keyCode==Keyboard.UP||e.keyCode==87)&&player.vy< -160)player.vy=-160;}
+    function touchJump():Void {if(state=="PLAY")player.jumpBuffer=.12;}
+    function touchUse():Void {if(state=="PLAY")interact();}
+    function touchNotes():Void {if(state=="PLAY")showNotes();else if(state=="NOTES")hideNotes();}
+    function touchPause():Void {if(state=="PLAY"||state=="PAUSE")togglePause();}
     function onClick(e:MouseEvent):Void {if(state=="QUIZ"&&e.stageY>=180&&e.stageY<430){var choice=Std.int((e.stageY-180)/82)+1;if(choice>=1&&choice<=3)answer(choice);}}
     function down(code:Int):Bool return keys.exists(code)&&keys.get(code);
     function allEvidence():Bool return evidence[0]&&evidence[1]&&evidence[2];

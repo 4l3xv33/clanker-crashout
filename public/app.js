@@ -8,6 +8,7 @@
 
   const ruffle = window.RufflePlayer.newest();
   const player = ruffle.createPlayer();
+  const touchMode = matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0 || new URLSearchParams(location.search).has("touch");
   player.setAttribute("aria-label", "ERROR 9 TO 5 Flash game");
   shell.replaceChildren(player);
 
@@ -15,7 +16,8 @@
     url: "./game.swf",
     autoplay: "on",
     unmuteOverlay: "hidden",
-    letterbox: "on"
+    letterbox: "on",
+    parameters: { mobile: touchMode ? "1" : "0" }
   }).then(() => player.focus()).catch(() => {
     shell.textContent = "The game could not start. Refresh to try again.";
   });
