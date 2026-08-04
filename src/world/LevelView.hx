@@ -18,7 +18,7 @@ class LevelView extends Sprite {
     public var platforms:Array<Rectangle>=[];
     public var evidencePositions:Array<PointData>=[];
     public var robotX:Float=1830;
-    public var stairsX:Float=2200;
+    public var exitX:Float=2370;
 
     public function new(data:FloorData,index:Int) {super();draw(data,index);}
 

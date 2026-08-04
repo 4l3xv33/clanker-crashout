@@ -31,6 +31,8 @@ for (const animation of ["run", "jump", "interact", "scan", "damage"]) {
 }
 if (!player.includes('playAction(name:String)') || !main.includes('player.playAction("damage")')) failures.push("Player action animations are not connected to gameplay");
 if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
+if (!main.includes("makeExitLight") || !main.includes("advanceFloor") || !main.includes("finalFeedbackAt")) failures.push("Buttonless glowing-exit floor transitions are not connected");
+if (main.includes("makeStairs") || main.includes("Take the stairs") || main.includes("STAIRWELL LOCKED")) failures.push("Legacy stair interaction is still present");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");
 if (!app.includes('document.addEventListener("pointerup"') || !app.includes("canNativeLock")) failures.push("Landscape lock must capture the first user gesture outside Ruffle");

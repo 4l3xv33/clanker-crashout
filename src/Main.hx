@@ -13,6 +13,7 @@ import flash.display.StageDisplayState;
 import flash.events.Event;
 import flash.events.KeyboardEvent;
 import flash.events.MouseEvent;
+import flash.filters.GlowFilter;
 import flash.geom.Rectangle;
 import flash.geom.ColorTransform;
 import flash.ui.Keyboard;
@@ -44,7 +45,7 @@ class Main extends Sprite {
     var player:Player;
     var robot:Robot;
     var coworker:Coworker;
-    var stairs:Sprite;
+    var exitLight:Sprite;
     var terminals:Array<Sprite>=[];
     var hazards:Array<Hazard>=[];
 
@@ -72,6 +73,7 @@ class Main extends Sprite {
     var invincible=0.0;
     var lastTime=0;
     var levelTime=0.0;
+    var finalFeedbackAt=0;
 
     public static function main():Void Lib.current.addChild(new Main());
     public function new(){super();addEventListener(Event.ADDED_TO_STAGE,init);}
@@ -116,12 +118,12 @@ class Main extends Sprite {
 
     function buildFloor():Void {
         while(world.numChildren>0)world.removeChildAt(0);level=new LevelView(floors[floorIndex],floorIndex);world.addChild(level);actors=new Sprite();world.addChild(actors);
-        evidence=[false,false,false];integrity=3;questionIndex=0;resolved=false;cameraX=0;checkpointX=70;levelTime=0;terminals=[];hazards=[];
+        evidence=[false,false,false];integrity=3;questionIndex=0;resolved=false;cameraX=0;checkpointX=70;levelTime=0;finalFeedbackAt=0;terminals=[];hazards=[];
         player.x=70;player.y=LevelView.GROUND-40;player.vx=0;player.vy=0;actors.addChild(player);
         for(i in 0...3){var terminal=makeTerminal(i,floors[floorIndex].accent);var p=level.evidencePositions[i];terminal.x=p.x;terminal.y=p.y;actors.addChild(terminal);terminals.push(terminal);}
         robot=new Robot(floors[floorIndex].accent,floors[floorIndex].robot,floorIndex);robot.x=level.robotX;robot.y=LevelView.GROUND-44;actors.addChild(robot);
         coworker=new Coworker(floors[floorIndex].accent,floors[floorIndex].coworker,floors[floorIndex].role,floorIndex);coworker.x=level.robotX+112;coworker.y=LevelView.GROUND-29;actors.addChild(coworker);
-        stairs=makeStairs(floors[floorIndex].accent);stairs.x=level.stairsX;stairs.y=LevelView.GROUND;actors.addChild(stairs);
+        exitLight=makeExitLight();exitLight.x=level.exitX;exitLight.y=LevelView.GROUND;exitLight.visible=false;actors.addChild(exitLight);
         var xs=[590.0,920.0,1210.0,1540.0];for(i in 0...xs.length){var minX=xs[i]-75,maxX=xs[i]+75;actors.addChildAt(makePatrolTrack(minX,maxX,floors[floorIndex].accent),0);var hazard=new Hazard(floors[floorIndex].accent,xs[i],minX,maxX,i+floorIndex);hazard.sprite.y=LevelView.GROUND-23;actors.addChild(hazard.sprite);hazards.push(hazard);}
         #if qa
         evidence=[true,true,true];for(terminal in terminals)terminal.alpha=.28;player.x=level.robotX-105;checkpointX=player.x;
@@ -133,16 +135,16 @@ class Main extends Sprite {
 
     function update(_:Event):Void {
         var now=Lib.getTimer();if(lastTime==0)lastTime=now;var dt=Math.min((now-lastTime)/1000,.04);lastTime=now;
-        prompt.update(dt);if(state!="PLAY")return;levelTime+=dt;invincible-=dt;
+        prompt.update(dt);if(state=="FEEDBACK"&&finalFeedbackAt>0){if(now>=finalFeedbackAt)continueFeedback();return;}if(state!="PLAY")return;levelTime+=dt;invincible-=dt;
         var input=0.0;if(down(Keyboard.LEFT)||down(65)||touch.left)input-=1;if(down(Keyboard.RIGHT)||down(68)||touch.right)input+=1;
         if(player.grounded)player.coyote=.1;else player.coyote-=dt;player.jumpBuffer-=dt;
         var acceleration=player.grounded ? 1250 : 760;player.vx+=input*acceleration*dt;var drag=player.grounded ? .035 : .32;player.vx*=Math.pow(drag,dt);if(player.vx>285)player.vx=285;if(player.vx< -285)player.vx=-285;
         if(input!=0)player.facing=input<0?-1:1;
         if(player.jumpBuffer>0&&player.coyote>0){player.vy=-470;player.jumpBuffer=0;player.coyote=0;player.grounded=false;audio.play("jump");}
-        var oldY=player.y;player.vy+=1120*dt;player.x+=player.vx*dt;player.y+=player.vy*dt;if(player.x<18){player.x=18;player.vx=0;}if(player.x>LevelView.WIDTH-18){player.x=LevelView.WIDTH-18;player.vx=0;}
+        var oldY=player.y;player.vy+=1120*dt;player.x+=player.vx*dt;player.y+=player.vy*dt;if(player.x<18){player.x=18;player.vx=0;}if(player.x>LevelView.WIDTH-18){if(resolved){advanceFloor();return;}player.x=LevelView.WIDTH-18;player.vx=0;}
         collide(oldY);if(player.y>H+100)respawn("A broken workflow dropped you from the process.");
         for(h in hazards){h.update(dt,LevelView.GROUND,save.settings.reducedMotion);if(invincible<=0&&distance(player.x,player.y,h.sprite.x,h.sprite.y)<31)damage("A corrupted automation process interrupted you.");}
-        player.animate(dt,Math.abs(player.vx)>20,false,save.settings.reducedMotion);player.alpha=(invincible>0&&Std.int(invincible*12)%2==0) ? .3 : 1;robot.update(dt,save.settings.reducedMotion);
+        player.animate(dt,Math.abs(player.vx)>20,false,save.settings.reducedMotion);player.alpha=(invincible>0&&Std.int(invincible*12)%2==0) ? .3 : 1;robot.update(dt,save.settings.reducedMotion);if(resolved)exitLight.alpha=save.settings.reducedMotion ? .92 : .76+Math.sin(levelTime*4)*.16;
         var target=Math.max(0,Math.min(LevelView.WIDTH-W,player.x-W*.42));cameraX+=save.settings.reducedMotion?(target-cameraX):(target-cameraX)*Math.min(1,dt*6);world.x=-cameraX;context();
     }
 
@@ -155,22 +157,22 @@ class Main extends Sprite {
         player.pulseScanner(false);
         for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){prompt.hint("[E] Inspect evidence  "+(i+1)+" / 3");player.pulseScanner(true);return;}
         if(distance(player.x,player.y,robot.x,robot.y)<125){prompt.hint(allEvidence()?"[E] Confront "+floors[floorIndex].robot:"ACCESS DENIED · Find all three evidence records");return;}
-        if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120){prompt.hint(resolved?"[E] Take the stairs":"STAIRWELL LOCKED · Restore this floor");return;}
+        if(resolved&&distance(player.x,player.y,exitLight.x,LevelView.GROUND-40)<190){prompt.hint("KEEP MOVING · RUN INTO THE LIGHT");return;}
         player.pulseScanner(false);
     }
 
     function interact():Void {
         for(i in 0...3)if(!evidence[i]&&distance(player.x,player.y,terminals[i].x,terminals[i].y)<82){player.playAction("interact");collectEvidence(i);return;}
         if(distance(player.x,player.y,robot.x,robot.y)<125&&allEvidence()){player.playAction("interact");questionIndex=0;showQuestion();return;}
-        if(distance(player.x,player.y,stairs.x,LevelView.GROUND-40)<120&&resolved){player.playAction("interact");if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();}
     }
 
     function collectEvidence(index:Int):Void {evidence[index]=true;terminals[index].alpha=.28;checkpointX=Math.max(checkpointX,terminals[index].x-90);audio.play("evidence");prompt.toast("EVIDENCE "+(index+1)+": "+floors[floorIndex].evidence[index],5.4);updateHud();}
     function showQuestion():Void {state="QUIZ";touch.visible=false;touch.reset();actionButton.visible=false;incident.question(floors[floorIndex],questionIndex);}
-    function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);buttonLabel(actionButton,lastCorrect?"CONTINUE":"TRY AGAIN");actionButton.visible=true;updateHud();}
+    function answer(choice:Int):Void {if(state!="QUIZ")return;var q=floors[floorIndex].questions[questionIndex];lastCorrect=choice==q.correct;if(lastCorrect)audio.play("correct");else{integrity--;audio.play("wrong");if(integrity<=0)integrity=3;}state="FEEDBACK";incident.feedback(q,lastCorrect,integrity);var finalCorrect=lastCorrect&&questionIndex==2;if(finalCorrect){finalFeedbackAt=Lib.getTimer()+2800;actionButton.visible=false;}else{buttonLabel(actionButton,lastCorrect?"CONTINUE":"TRY AGAIN");actionButton.visible=true;}updateHud();}
     function continueFeedback():Void {if(lastCorrect)questionIndex++;if(questionIndex>=3)restoreFloor();else showQuestion();}
 
-    function restoreFloor():Void {state="PLAY";resolved=true;incident.hide();touch.visible=touchEnabled;robot.restore();coworker.release();audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Stairwell access restored.",5.5);updateHud();}
+    function restoreFloor():Void {state="PLAY";resolved=true;finalFeedbackAt=0;incident.hide();actionButton.visible=false;touch.visible=touchEnabled;robot.restore();coworker.release();exitLight.visible=true;audio.play("repair");save.unlock(Std.int(Math.min(floors.length-1,floorIndex+1)));prompt.toast(floors[floorIndex].coworker+": "+floors[floorIndex].rescueLine+"  Exit signal online. Run into the light.",5.5);updateHud();}
+    function advanceFloor():Void {if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();}
 
     function damage(message:String):Void {integrity--;invincible=1.4;player.playAction("damage");player.vx=-player.facing*210;player.vy=-260;audio.play("damage");if(integrity<=0){integrity=3;respawn("Coaching checkpoint restored your integrity.");}else prompt.toast(message+"  Integrity -1",3.4);updateHud();}
     function respawn(message:String):Void {player.x=checkpointX;player.y=250;player.vx=0;player.vy=0;invincible=1.5;prompt.toast(message,3.5);}
@@ -214,5 +216,5 @@ class Main extends Sprite {
 
     function makeTerminal(index:Int,accent:Int):Sprite return new EvidenceIcon(index,accent);
     function makePatrolTrack(minX:Float,maxX:Float,accent:Int):Sprite {var s=new Sprite();s.x=minX;s.y=LevelView.GROUND-5;var width=maxX-minX,g=s.graphics;g.lineStyle(7,0x07101D,.95);g.moveTo(0,0);g.lineTo(width,0);g.lineStyle(2,0x5CDAFF,.82);g.moveTo(0,0);g.lineTo(width,0);g.beginFill(0x5CDAFF,.9);g.drawRoundRect(-3,-10,6,13,3);g.drawRoundRect(width-3,-10,6,13,3);g.endFill();g.lineStyle(1,accent,.55);for(i in 1...5){var x=width*i/5;g.moveTo(x,-3);g.lineTo(x,3);}return s;}
-    function makeStairs(accent:Int):Sprite {var s=new Sprite(),g=s.graphics;g.lineStyle(6,accent);for(i in 0...6){g.moveTo(i*24-72,-i*18);g.lineTo(i*24-48,-i*18);g.lineTo(i*24-48,-(i+1)*18);}var t=Theme.field(13,accent,true);t.text="STAIRWELL";t.x=-48;t.y=8;t.width=100;t.height=20;s.addChild(t);return s;}
+    function makeExitLight():Sprite {var s=new Sprite(),g=s.graphics;g.beginFill(0xFFF7C2,.11);g.drawEllipse(-82,-360,164,360);g.endFill();g.beginFill(0xFFFFFF,.32);g.drawEllipse(-37,-330,74,330);g.endFill();g.beginFill(0xFFF2A8,.9);g.drawEllipse(-28,-18,56,24);g.endFill();g.lineStyle(2,0xFFFFFF,.9);g.moveTo(0,-330);g.lineTo(0,-20);s.filters=[new GlowFilter(0xFFF1A8,.95,42,42,2.2,2,false,false)];var t=Theme.field(13,0xFFF4B0,true);t.text="EXIT";t.x=-34;t.y=-390;t.width=68;t.height=22;s.addChild(t);return s;}
 }

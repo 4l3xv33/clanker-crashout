@@ -13,6 +13,6 @@ class Hud extends Sprite {
         objectiveText=Theme.field(13,Theme.MUTED,false);objectiveText.x=18;objectiveText.y=31;objectiveText.width=620;objectiveText.height=22;addChild(objectiveText);
         integrityText=Theme.field(15,Theme.MINT,true);integrityText.x=700;integrityText.y=18;integrityText.width=240;integrityText.height=24;addChild(integrityText);
     }
-    public function update(floor:Int,department:String,evidence:Int,integrity:Int,resolved:Bool):Void {floorText.text="FLOOR "+(floor+1)+" / 5    "+department.toUpperCase();objectiveText.text=resolved?"SYSTEM RESTORED · Reach the stairwell":"EVIDENCE "+evidence+" / 3 · Investigate before you intervene";integrityText.text="SYSTEM INTEGRITY  "+integrity+" / 3";}
+    public function update(floor:Int,department:String,evidence:Int,integrity:Int,resolved:Bool):Void {floorText.text="FLOOR "+(floor+1)+" / 5    "+department.toUpperCase();objectiveText.text=resolved?"SYSTEM RESTORED - Run into the light":"EVIDENCE "+evidence+" / 3 - Investigate before you intervene";integrityText.text="SYSTEM INTEGRITY  "+integrity+" / 3";}
     public function setLargeText(enabled:Bool):Void {floorText.defaultTextFormat=new flash.text.TextFormat("_sans",enabled?18:15,Theme.TEXT,true);objectiveText.defaultTextFormat=new flash.text.TextFormat("_sans",enabled?15:13,Theme.MUTED,false);integrityText.defaultTextFormat=new flash.text.TextFormat("_sans",enabled?18:15,Theme.MINT,true);}
 }

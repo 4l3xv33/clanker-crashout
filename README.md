@@ -15,7 +15,7 @@ An original five-floor educational platformer about diagnosing broken workplace 
 | Touch D-pad | Left/right movement, up to jump, center star to interact |
 | Touch utility buttons | Open notes and pause on phones and tablets |
 | Space | Jump |
-| E | Inspect evidence, confront a robot, use stairs |
+| E | Inspect evidence and confront a robot |
 | G | Open field notes |
 | 1–3 or mouse | Choose an incident response |
 | Esc | Pause and settings |
@@ -32,6 +32,8 @@ Each floor follows the same learning loop:
 3. Choose an immediate response.
 4. Install a preventive control.
 5. Restore the robot and release the coworker.
+
+After a rescue, the final explanation closes automatically. Run into the glowing light at the far-right edge to enter the next floor; there is no stair interaction or end-of-level Continue button.
 
 The five departments cover hallucination and grounding, historical bias and contestability, consent and deceptive marketing, provenance and impersonation, and system-level objectives and least privilege.
 
