@@ -101,7 +101,7 @@ class Main extends Sprite {
 
     function showTitle():Void {
         state="TITLE";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"PLAY");actionButton.visible=false;touch.visible=false;touch.reset();hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
-        screenText.htmlText='<font size="40" color="#72F1B8">ROGUE INFERENCE</font>\n<font size="18" color="#FFFFFF"><i>Correct the model. Rescue the humans.</i></font>\n\n<font size="20" color="#FFFFFF">The system is confident.\nThe system is wrong.</font>\n\n<font size="18" color="#D8E3F5">Investigate five corrupted departments, repair their decisions, and restore the humans.</font>\n\n<font size="14" color="#A8B8D4">WASD / Arrows  ·  Space jump  ·  E inspect  ·  Esc settings</font>';
+        screenText.htmlText='<font size="40" color="#72F1B8">CLANKER CRASHOUT</font>\n<font size="18" color="#FFFFFF"><i>Correct the model. Rescue the humans.</i></font>\n\n<font size="20" color="#FFFFFF">The system is confident.\nThe system is wrong.</font>\n\n<font size="18" color="#D8E3F5">Investigate five corrupted departments, repair their decisions, and restore the humans.</font>\n\n<font size="14" color="#A8B8D4">WASD / Arrows  ·  Space jump  ·  E inspect  ·  Esc settings</font>';
     }
 
     function showFloorSelect():Void {

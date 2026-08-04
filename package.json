@@ -1,5 +1,5 @@
 {
-  "name": "rogue-inference",
+  "name": "clanker-crashout",
   "version": "1.0.0",
   "private": true,
   "description": "An AI rescue platformer running as a real SWF through Ruffle",
