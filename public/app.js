@@ -26,22 +26,33 @@
   // Native fullscreen/orientation lock takes over after the first legal gesture.
   document.documentElement.classList.toggle("orientation-fallback", touchMode);
   player.setAttribute("aria-label", "CLANKER CRASHOUT Flash game");
+  player.setAttribute("tabindex", "0");
   shell.replaceChildren(player);
 
+  const focusPlayer = () => {
+    const keyboardTarget = !touchMode ? player.shadowRoot?.querySelector("#virtual-keyboard") : null;
+    (keyboardTarget || player).focus({ preventScroll: true });
+  };
+  focusPlayer();
+
   player.ruffle().load({
-    url: "./game.swf?v=clanker-crashout-1",
+    url: "./game.swf?v=clanker-crashout-3",
     autoplay: "on",
     unmuteOverlay: "hidden",
     letterbox: "on",
     contextMenu: "off",
     allowFullscreen: true,
+    allowScriptAccess: true,
     parameters: { mobile: touchMode ? "1" : "0" }
-  }).then(() => player.focus()).catch(() => {
+  }).then(() => {
+    focusPlayer();
+    requestAnimationFrame(focusPlayer);
+  }).catch(() => {
     shell.textContent = "The game could not start. Refresh to try again.";
   });
 
   async function lockLandscape() {
-    player.focus();
+    focusPlayer();
     if (!touchMode) return;
     var locked = false;
     try {
@@ -57,7 +68,17 @@
   }
 
   document.addEventListener("pointerup", lockLandscape, { capture: true, once: true });
-  player.addEventListener("pointerdown", () => player.focus());
+  player.addEventListener("pointerdown", focusPlayer);
+  document.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    if (event.repeat) return;
+    try {
+      player.ruffle().callExternalInterface("activatePrimaryAction");
+    } catch {}
+    focusPlayer();
+  }, { capture: true });
   screen.orientation?.addEventListener?.("change", () => {
     if (!touchMode) return;
     if (screen.orientation.type.startsWith("landscape")) {

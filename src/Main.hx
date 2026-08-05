@@ -13,6 +13,7 @@ import flash.display.StageDisplayState;
 import flash.events.Event;
 import flash.events.KeyboardEvent;
 import flash.events.MouseEvent;
+import flash.external.ExternalInterface;
 import flash.filters.GlowFilter;
 import flash.geom.Rectangle;
 import flash.geom.ColorTransform;
@@ -86,6 +87,7 @@ class Main extends Sprite {
         hud=new Hud();addChild(hud);prompt=new PromptBar();addChild(prompt);incident=new IncidentPanel();incident.setChoiceHandler(answer);addChild(incident);pausePanel=new PausePanel();addChild(pausePanel);makeScreen();
         touch=new TouchControls(touchJump,touchUse,touchNotes,touchPause);addChild(touch);if(touchEnabled)prompt.setTouchLayout();
         stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown);stage.addEventListener(KeyboardEvent.KEY_UP,keyUp);addEventListener(Event.ENTER_FRAME,update);
+        if(ExternalInterface.available)ExternalInterface.addCallback("activatePrimaryAction",activatePrimaryAction);
         applyAccessibility();showTitle();
     }
 
@@ -101,6 +103,12 @@ class Main extends Sprite {
     function makeButton(label:String,x:Float,y:Float,w:Float,h:Float,color:Int):Sprite {var button=new Sprite();button.x=x;button.y=y;button.buttonMode=true;button.mouseChildren=false;button.graphics.beginFill(color);button.graphics.drawRoundRect(0,0,w,h,12);button.graphics.endFill();button.graphics.lineStyle(2,0xFFFFFF,.18);button.graphics.drawRoundRect(1,1,w-2,h-2,12);var text=Theme.field(19,0x07110D,true);text.name="label";text.x=0;text.y=16;text.width=w;text.height=28;text.autoSize=flash.text.TextFieldAutoSize.NONE;var format=new flash.text.TextFormat("_sans",19,0x07110D,true,null,null,null,null,flash.text.TextFormatAlign.CENTER);text.defaultTextFormat=format;text.text=label;text.setTextFormat(format);button.addChild(text);return button;}
     function buttonLabel(button:Sprite,label:String):Void {var text=cast(button.getChildByName("label"),flash.text.TextField);text.text=label;}
     function activateAction():Void {if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();else if(state=="NOTES")hideNotes();else if(state=="PAUSE")togglePause();}
+    function activatePrimaryAction():Bool {
+        if(state=="TITLE"){beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));return true;}
+        if(state=="ENDING"){showTitle();return true;}
+        if(state=="BRIEFING"||state=="FEEDBACK"||state=="NOTES"||state=="PAUSE"){activateAction();return true;}
+        return false;
+    }
 
     function validateQuestions():Void {
         for(floor in floors){
@@ -204,8 +212,8 @@ class Main extends Sprite {
         #if qa
         if(state=="PLAY"&&e.keyCode==78){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();return;}
         #end
-        if(e.keyCode==Keyboard.ENTER&&(state=="BRIEFING"||state=="FEEDBACK"||state=="NOTES"||state=="PAUSE")){activateAction();return;}
-        if(state=="TITLE"){if(e.keyCode==Keyboard.ENTER)beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(e.keyCode==76)showFloorSelect();return;}
+        if(e.keyCode==Keyboard.ENTER&&activatePrimaryAction())return;
+        if(state=="TITLE"){if(e.keyCode==76)showFloorSelect();return;}
         if(state=="SELECT"){var selected=Std.int(e.keyCode)-49;if(e.keyCode==Keyboard.ESCAPE)showTitle();else if(e.keyCode>=49&&e.keyCode<=53&&selected<=save.highestFloor)beginFloor(selected);return;}
         if(state=="BRIEFING")return;
         if(state=="QUIZ"&&e.keyCode>=49&&e.keyCode<=51){answer(Std.int(e.keyCode)-48);return;}

@@ -36,10 +36,12 @@ if (!main.includes("makeExitLight") || !main.includes("advanceFloor") || !main.i
 if (!incidentPanel.includes("setChoiceHandler") || !incidentPanel.includes("choiceButtons")) failures.push("Quiz answers must use real clickable controls");
 if (main.includes("e.stageY>=180") || main.includes("function onClick")) failures.push("Legacy coordinate-guessed quiz clicking is still present");
 if (!main.includes("e.keyCode==Keyboard.ENTER") || !main.includes("activateAction()")) failures.push("Enter must activate Continue and other visible action states");
-if (!main.includes('state=="TITLE"){if(e.keyCode==Keyboard.ENTER)beginFloor')) failures.push("Enter must activate Play from the title screen");
+if (!main.includes('ExternalInterface.addCallback("activatePrimaryAction"') || !main.includes("function activatePrimaryAction():Bool")) failures.push("The SWF must expose its primary green-button action to the page");
 if (!main.includes("validateQuestions()") || !main.includes("q.correct<1") || !main.includes("q.choices.length!=3")) failures.push("Single-answer question validation is not connected");
 if (main.includes("makeStairs") || main.includes("Take the stairs") || main.includes("STAIRWELL LOCKED")) failures.push("Legacy stair interaction is still present");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
+if (!app.includes('querySelector("#virtual-keyboard")') || !app.includes("requestAnimationFrame(focusPlayer)")) failures.push("Ruffle must receive keyboard focus immediately after loading");
+if (!app.includes('callExternalInterface("activatePrimaryAction")') || !app.includes("allowScriptAccess: true")) failures.push("The page must route Enter directly to the SWF primary action");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");
 if (!app.includes('document.addEventListener("pointerup"') || !app.includes("canNativeLock")) failures.push("Landscape lock must capture the first user gesture outside Ruffle");
 if (!app.includes('classList.toggle("orientation-fallback", touchMode)')) failures.push("Touch devices must render the initial Ruffle view in landscape before the first gesture");
