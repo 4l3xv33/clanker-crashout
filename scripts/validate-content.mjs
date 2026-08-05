@@ -4,6 +4,7 @@ const content = await readFile(new URL("../src/data/GameContent.hx", import.meta
 const main = await readFile(new URL("../src/Main.hx", import.meta.url), "utf8");
 const player = await readFile(new URL("../src/entities/Player.hx", import.meta.url), "utf8");
 const playerArt = await readFile(new URL("../src/entities/PlayerArt.hx", import.meta.url), "utf8");
+const incidentPanel = await readFile(new URL("../src/ui/IncidentPanel.hx", import.meta.url), "utf8");
 const productionBuild = await readFile(new URL("../build.hxml", import.meta.url), "utf8");
 const html = await readFile(new URL("../public/index.html", import.meta.url), "utf8");
 const app = await readFile(new URL("../public/app.js", import.meta.url), "utf8");
@@ -32,6 +33,10 @@ for (const animation of ["run", "jump", "interact", "scan", "damage"]) {
 if (!player.includes('playAction(name:String)') || !main.includes('player.playAction("damage")')) failures.push("Player action animations are not connected to gameplay");
 if (!main.includes("TouchControls") || !app.includes('parameters: { mobile:')) failures.push("Mobile touch controls are not connected end to end");
 if (!main.includes("makeExitLight") || !main.includes("advanceFloor") || !main.includes("finalFeedbackAt")) failures.push("Buttonless glowing-exit floor transitions are not connected");
+if (!incidentPanel.includes("setChoiceHandler") || !incidentPanel.includes("choiceButtons")) failures.push("Quiz answers must use real clickable controls");
+if (main.includes("e.stageY>=180") || main.includes("function onClick")) failures.push("Legacy coordinate-guessed quiz clicking is still present");
+if (!main.includes("e.keyCode==Keyboard.ENTER") || !main.includes("activateAction()")) failures.push("Enter must activate Continue and other visible action states");
+if (!main.includes("validateQuestions()") || !main.includes("q.correct<1") || !main.includes("q.choices.length!=3")) failures.push("Single-answer question validation is not connected");
 if (main.includes("makeStairs") || main.includes("Take the stairs") || main.includes("STAIRWELL LOCKED")) failures.push("Legacy stair interaction is still present");
 if (!app.includes('contextMenu: "off"')) failures.push("Ruffle context menu is not disabled");
 if (!app.includes('orientation.lock("landscape")') || !app.includes("requestFullscreen")) failures.push("Mobile fullscreen landscape lock is not connected");

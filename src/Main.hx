@@ -80,12 +80,12 @@ class Main extends Sprite {
 
     function init(_:Event):Void {
         touchEnabled=Reflect.field(loaderInfo.parameters,"mobile")=="1";stage.scaleMode=touchEnabled?flash.display.StageScaleMode.EXACT_FIT:flash.display.StageScaleMode.SHOW_ALL;stage.align=flash.display.StageAlign.TOP_LEFT;stage.color=Theme.BG;
-        floors=GameContent.floors();save=new SaveManager();audio=new SoundManager();audio.enabled=save.settings.sound;
+        floors=GameContent.floors();validateQuestions();save=new SaveManager();audio=new SoundManager();audio.enabled=save.settings.sound;
         world=new Sprite();actors=new Sprite();addChild(world);
         player=new Player();
-        hud=new Hud();addChild(hud);prompt=new PromptBar();addChild(prompt);incident=new IncidentPanel();addChild(incident);pausePanel=new PausePanel();addChild(pausePanel);makeScreen();
+        hud=new Hud();addChild(hud);prompt=new PromptBar();addChild(prompt);incident=new IncidentPanel();incident.setChoiceHandler(answer);addChild(incident);pausePanel=new PausePanel();addChild(pausePanel);makeScreen();
         touch=new TouchControls(touchJump,touchUse,touchNotes,touchPause);addChild(touch);if(touchEnabled)prompt.setTouchLayout();
-        stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown);stage.addEventListener(KeyboardEvent.KEY_UP,keyUp);stage.addEventListener(MouseEvent.CLICK,onClick);addEventListener(Event.ENTER_FRAME,update);
+        stage.addEventListener(KeyboardEvent.KEY_DOWN,keyDown);stage.addEventListener(KeyboardEvent.KEY_UP,keyUp);addEventListener(Event.ENTER_FRAME,update);
         applyAccessibility();showTitle();
     }
 
@@ -95,11 +95,24 @@ class Main extends Sprite {
         var shade=new Sprite();shade.graphics.beginFill(0x050810,.22);shade.graphics.drawRect(0,0,W,H);shade.graphics.endFill();shade.graphics.beginFill(0x050810,.84);shade.graphics.drawRect(0,0,525,H);shade.graphics.endFill();screen.addChild(shade);
         screenText=Theme.field(20,Theme.TEXT,false);screenText.x=48;screenText.y=46;screenText.width=455;screenText.height=350;screen.addChild(screenText);
         playButton=makeButton("PLAY",48,415,190,58,Theme.MINT);screen.addChild(playButton);playButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="TITLE")beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(state=="ENDING")showTitle();});
-        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();else if(state=="NOTES")hideNotes();else if(state=="PAUSE")togglePause();});actionButton.visible=false;
+        actionButton=makeButton("ENTER FLOOR",365,405,230,56,Theme.MINT);addChild(actionButton);actionButton.addEventListener(MouseEvent.CLICK,function(e:MouseEvent){e.stopPropagation();activateAction();});actionButton.visible=false;
     }
 
     function makeButton(label:String,x:Float,y:Float,w:Float,h:Float,color:Int):Sprite {var button=new Sprite();button.x=x;button.y=y;button.buttonMode=true;button.mouseChildren=false;button.graphics.beginFill(color);button.graphics.drawRoundRect(0,0,w,h,12);button.graphics.endFill();button.graphics.lineStyle(2,0xFFFFFF,.18);button.graphics.drawRoundRect(1,1,w-2,h-2,12);var text=Theme.field(19,0x07110D,true);text.name="label";text.x=0;text.y=16;text.width=w;text.height=28;text.autoSize=flash.text.TextFieldAutoSize.NONE;var format=new flash.text.TextFormat("_sans",19,0x07110D,true,null,null,null,null,flash.text.TextFormatAlign.CENTER);text.defaultTextFormat=format;text.text=label;text.setTextFormat(format);button.addChild(text);return button;}
     function buttonLabel(button:Sprite,label:String):Void {var text=cast(button.getChildByName("label"),flash.text.TextField);text.text=label;}
+    function activateAction():Void {if(state=="BRIEFING")startPlay();else if(state=="FEEDBACK")continueFeedback();else if(state=="NOTES")hideNotes();else if(state=="PAUSE")togglePause();}
+
+    function validateQuestions():Void {
+        for(floor in floors){
+            if(floor.questions.length!=3)throw "Each floor must contain exactly three questions: "+floor.department;
+            for(q in floor.questions){
+                if(q.choices.length!=3)throw "Each question must contain exactly three choices: "+q.prompt;
+                if(q.correct<1||q.correct>q.choices.length)throw "A question has no single valid correct answer: "+q.prompt;
+                var seen:Map<String,Bool>=new Map();
+                for(choice in q.choices){var key=StringTools.trim(choice).toLowerCase();if(seen.exists(key))throw "A question contains duplicate answer choices: "+q.prompt;seen.set(key,true);}
+            }
+        }
+    }
 
     function showTitle():Void {
         state="TITLE";screen.visible=true;titleArt.visible=true;playButton.visible=true;buttonLabel(playButton,"PLAY");actionButton.visible=false;touch.visible=false;touch.reset();hud.visible=false;prompt.visible=false;incident.hide();pausePanel.hide();
@@ -191,6 +204,7 @@ class Main extends Sprite {
         #if qa
         if(state=="PLAY"&&e.keyCode==78){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();return;}
         #end
+        if(e.keyCode==Keyboard.ENTER&&(state=="BRIEFING"||state=="FEEDBACK"||state=="NOTES"||state=="PAUSE")){activateAction();return;}
         if(state=="TITLE"){if(e.keyCode==76)showFloorSelect();return;}
         if(state=="SELECT"){var selected=Std.int(e.keyCode)-49;if(e.keyCode==Keyboard.ESCAPE)showTitle();else if(e.keyCode>=49&&e.keyCode<=53&&selected<=save.highestFloor)beginFloor(selected);return;}
         if(state=="BRIEFING")return;
@@ -207,7 +221,6 @@ class Main extends Sprite {
     function touchUse():Void {if(state=="PLAY")interact();}
     function touchNotes():Void {if(state=="PLAY")showNotes();else if(state=="NOTES")hideNotes();}
     function touchPause():Void {if(state=="PLAY"||state=="PAUSE")togglePause();}
-    function onClick(e:MouseEvent):Void {if(state=="QUIZ"&&e.stageY>=180&&e.stageY<430){var choice=Std.int((e.stageY-180)/82)+1;if(choice>=1&&choice<=3)answer(choice);}}
     function down(code:Int):Bool return keys.exists(code)&&keys.get(code);
     function allEvidence():Bool return evidence[0]&&evidence[1]&&evidence[2];
     function evidenceCount():Int {var n=0;for(v in evidence)if(v)n++;return n;}
