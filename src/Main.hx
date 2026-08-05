@@ -205,7 +205,7 @@ class Main extends Sprite {
         if(state=="PLAY"&&e.keyCode==78){if(floorIndex<floors.length-1)beginFloor(floorIndex+1);else showEnding();return;}
         #end
         if(e.keyCode==Keyboard.ENTER&&(state=="BRIEFING"||state=="FEEDBACK"||state=="NOTES"||state=="PAUSE")){activateAction();return;}
-        if(state=="TITLE"){if(e.keyCode==76)showFloorSelect();return;}
+        if(state=="TITLE"){if(e.keyCode==Keyboard.ENTER)beginFloor(Std.int(Math.min(save.highestFloor,floors.length-1)));else if(e.keyCode==76)showFloorSelect();return;}
         if(state=="SELECT"){var selected=Std.int(e.keyCode)-49;if(e.keyCode==Keyboard.ESCAPE)showTitle();else if(e.keyCode>=49&&e.keyCode<=53&&selected<=save.highestFloor)beginFloor(selected);return;}
         if(state=="BRIEFING")return;
         if(state=="QUIZ"&&e.keyCode>=49&&e.keyCode<=51){answer(Std.int(e.keyCode)-48);return;}
